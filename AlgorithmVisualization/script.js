@@ -1,21 +1,16 @@
-document.getElementById('fileInput').addEventListener('change', handleFile, false);
+document.getElementById('startBtn').addEventListener('click', startRandomGraph);
 
 let network; // usato per manipolare il grafo durante l’animazione
 
-async function handleFile(event) {
-  const reader = new FileReader();
-  reader.onload = async function(event) {
-    const text = event.target.result;
-    const { nodes, edges, start } = parseInput(text);
-    const graph = buildGraph(nodes, edges);
+function startRandomGraph() {
+  const { nodes, edges, start } = generateRandomGraph(8, 15); // 8 nodi, 15 archi
+  const graph = buildGraph(nodes, edges);
 
-    // Crea e visualizza grafo iniziale
-    drawGraph("original-graph", graph, { start });
+  // Crea e visualizza grafo iniziale
+  drawGraph("original-graph", graph, { start });
 
-    // Esegui animazione Kosaraju
-    const { scc, componentGraph } = await animateKosaraju(graph, nodes, start);
-
-    // Trova ID della componente del nodo di partenza
+  // Esegui animazione Kosaraju
+  animateKosaraju(graph, nodes, start).then(({ scc, componentGraph }) => {
     const componentIdOfStart = findComponentOf(start, scc);
     const zeroIndegreeCount = countZeroIndegree(componentGraph, componentIdOfStart);
 
@@ -23,20 +18,9 @@ async function handleFile(event) {
 
     document.getElementById('output').innerText =
       `Componenti fortemente connesse con grado entrante 0 (esclusa quella contenente il nodo ${start}): ${zeroIndegreeCount}`;
-  };
-  reader.readAsText(event.target.files[0]);
+  });
 }
 
-function parseInput(text) {
-  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-  const nodes = lines[0].split(':')[1].trim().split(/\s+/).map(Number);
-  const edges = lines[1].split(':')[1].split(',').map(pair => {
-    const [u, v] = pair.trim().split(/\s+/).map(Number);
-    return { from: u, to: v };
-  });
-  const start = parseInt(lines[2].split(':')[1].trim());
-  return { nodes, edges, start };
-}
 
 function buildGraph(nodes, edges) {
   const adj = {};
@@ -193,4 +177,25 @@ function wait(ms) {
 function getRandomColor() {
   const letters = '89ABCDEF';
   return '#' + Array.from({ length: 6 }, () => letters[Math.floor(Math.random() * letters.length)]).join('');
+}
+
+function generateRandomGraph(nodeCount, edgeCount) {
+  const nodes = Array.from({ length: nodeCount }, (_, i) => i + 1);
+  const edges = new Set();
+
+  while (edges.size < edgeCount) {
+    const from = nodes[Math.floor(Math.random() * nodeCount)];
+    const to = nodes[Math.floor(Math.random() * nodeCount)];
+    if (from !== to) {
+      edges.add(`${from},${to}`);
+    }
+  }
+
+  const edgeList = Array.from(edges).map(e => {
+    const [from, to] = e.split(',').map(Number);
+    return { from, to };
+  });
+
+  const start = nodes[Math.floor(Math.random() * nodeCount)];
+  return { nodes, edges: edgeList, start };
 }
