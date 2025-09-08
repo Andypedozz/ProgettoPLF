@@ -1,5 +1,3 @@
-import qualified Lista as L
-
 type GrafoDir a = ([a], [(a, a)])
 
 grafo_dir :: (Eq a) => GrafoDir a -> Bool
