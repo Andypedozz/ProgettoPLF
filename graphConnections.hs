@@ -19,6 +19,8 @@
 -}
 
 module Main where
+import qualified Data.Map.Strict as M
+import Data.Char (isSpace)
 
 type GrafoDir a = ([a], [(a, a)])
 
@@ -56,7 +58,9 @@ trasposto :: (Eq a) => GrafoDir a -> GrafoDir a
 trasposto (vs, as) = (vs, [(v2, v1) | (v1, v2) <- as])
 
 trim :: String -> String
-trim = f . f where f = reverse . dropWhile isSpace
+trim = f . f
+  where
+    f = reverse . dropWhile isSpace
 
 leggiDatiDaFile :: FilePath -> IO ([Int], [(Int,Int)])
 leggiDatiDaFile path = do
@@ -69,15 +73,33 @@ leggiDatiDaFile path = do
       pure (vs, as)
     _ -> error "File malformato: servono due righe ([Int] e [(Int,Int)])."
 
-generaGrafoOrientato
+-- Costruisce la mappa di adiacenza
+costruisciGrafo :: [Int] -> [(Int, Int)] -> M.Map Int [Int]
+costruisciGrafo nodi archi =
+  let
+    -- mappa iniziale con tutti i nodi e liste vuote
+    mappaVuota = M.fromList [(n, []) | n <- nodi]
 
-acquisisciVerticePartenza
+    -- inserisce un arco orientato (u,v) nella mappa
+    ins (u,v) m = M.adjust (v:) u m
 
-generaGrafoComponentiFortementeConnesse
+    -- se vuoi grafo non orientato, aggiungi anche (v,u)
+    mappaFinale = foldr ins mappaVuota archi
+  in
+    mappaFinale
 
-calcolaNumeroComponentiNonRaggiungibili
+-- generaGrafoOrientato
+
+-- acquisisciVerticePartenza
+
+-- generaGrafoComponentiFortementeConnesse
+
+-- calcolaNumeroComponentiNonRaggiungibili
 
 
 main :: IO()
 main = do
+  (vs, as) <- leggiDatiDaFile "input.txt"
+  let grafo = costruisciGrafo vs as
+  print grafo
 
