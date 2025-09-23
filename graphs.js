@@ -36,6 +36,7 @@ function kosaraju(graph) {
             dfs(n, visited, adj, stack);
         }
     }
+    console.log(stack);
 
     // 3. DFS sul grafo trasposto in ordine inverso
     visited.clear();
@@ -167,9 +168,26 @@ function getRandomInt(size) {
 
 
 function main() {
-    const graph = generateRandomGraph(10);
-    const startingNode = getRandomInt(10); // <--- puoi cambiare il nodo di partenza
+    // const graph = generateRandomGraph(10);
+    // const startingNode = getRandomInt(10); // <--- puoi cambiare il nodo di partenza
     
+    const graph = {
+        nodes: [0,1,2,3,4,5,6,7],
+        edges: [
+            [0,1],
+            [1,2],
+            [2,0],
+            [2,3],
+            [3,4],
+            [4,5],
+            [4,7],
+            [5,6],
+            [6,4],
+            [6,7]
+        ]
+    }
+    const startingNode = 0;
+
     const map = buildAdjList(graph.nodes, graph.edges);
     console.log("Grafo originale:");
     console.log(map);

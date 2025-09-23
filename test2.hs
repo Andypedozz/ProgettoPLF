@@ -106,13 +106,24 @@ compressGraph sccs edges =
         let j = findSCCIndex v sccs,
         i /= j]
 
+-- Legge un vertice da tastiera
+readStartVertex :: IO Int
+readStartVertex = do
+    putStrLn "Inserisci il vertice di partenza:"
+    input <- getLine
+    let v = read input :: Int
+    return v
+
 main :: IO ()
 main = do
     let vs = [0,1,2,3,4,5,6,7]
     let as = [(0,1),(1,2),(2,0),(2,3),(3,4),(4,5),(4,6),(4,7),(5,6),(6,7)]
+    let startingNode = 0
     putStrLn "Grafo iniziale:"
-    print as
-    let ordineDiCompletamento  = dfs vs as [] []
+    putStrLn $ "Nodo di partenza: " ++ show startingNode
+    let ordineDiCompletamento  = dfs [startingNode] as [] []
+    putStrLn "Ordine di completamento della DFS:"
+    print ordineDiCompletamento
     let archiInvertiti = invertiArchi as
     putStrLn "Grafo con archi invertiti:"
     print archiInvertiti
