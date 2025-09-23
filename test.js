@@ -65,35 +65,39 @@ function dfsSCC(u, vs, as, visited, component) {
     });
 }
 
+function kosaraju(vs, as, start = vs[0]) {
+    // Getting completing order of visit
+    const postOrder = DFS(vs, as, start);
+
+    // Reversing the edges
+    const reversedAs = [];
+    as.forEach(edge => {
+        reversedAs.push([edge[1], edge[0]]);
+    });
+
+    // Getting SCCs
+    const sccs = getSCCs(vs, reversedAs, postOrder);
+    return sccs;
+}
+
 // ===================
 // ESEMPIO DI UTILIZZO
 // ===================
 
-const vs = [0,1,2,3,4,5,6,7];
-const as = [
-    [0,1],
-    [1,2],
-    [2,0],
-    [2,3],
-    [3,4],
-    [4,5],
-    [6,4],
-    [4,7],
-    [5,6],
-    [6,7]
+let graphs = [
+  { vs: [1,2,3,4], as: [[1,2],[2,3],[3,4],[4,1]] },
+  { vs: [1,2,3,4], as: [[1,2],[2,1],[3,4],[4,3]] },
+  { vs: [1,2,3,4], as: [[1,2],[2,3],[3,4]] },
+  { vs: [1,2,3,4,5], as: [[1,2],[2,3],[3,1],[3,4],[4,5],[5,3]] },
+  { vs: [1,2,3,4,5,6], as: [[1,2],[2,3],[3,1],[4,5],[5,6],[6,4],[3,4]] },
+  { vs: [1,2,3,4,5], as: [[1,2],[2,1],[3,3],[4,5]] },
+  { vs: [1,2,3,4,5], as: [[1,2],[2,3],[3,1],[3,4],[4,5]] },
+  { vs: [1,2,3,4,5,6], as: [[1,2],[2,1],[2,3],[3,4],[4,3],[4,5],[5,6],[6,5]] },
+  { vs: [1,2,3,4,5,6], as: [[1,2],[2,3],[3,4],[4,5],[5,6]] },
+  { vs: [1,2,3,4,5,6,7,8,9], as: [[1,2],[2,3],[3,1],[3,4],[4,5],[5,6],[6,4],[6,7],[7,8],[8,7],[8,9]] }
 ];
 
-const start = 0;
-
-// Getting completing order of visit
-const postOrder = DFS(vs, as, start);
-
-// Reversing the edges
-const reversedAs = [];
-as.forEach(edge => {
-    reversedAs.push([edge[1], edge[0]]);
+graphs.forEach(graph => {
+    const { vs, as } = graph;
+    console.log(kosaraju(vs, as));
 });
-
-// Getting SCCs
-const sccs = getSCCs(vs, reversedAs, postOrder);
-console.log(sccs);

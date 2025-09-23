@@ -106,23 +106,51 @@ compressGraph sccs edges =
         let j = findSCCIndex v sccs,
         i /= j]
 
+-- Legge un vertice da tastiera
+acquisisciVerticePartenza :: IO Int
+acquisisciVerticePartenza = do
+    putStrLn "Inserisci il vertice di partenza:"
+    input <- getLine
+    let v = read input :: Int
+    return v
+
+kosaraju :: (Eq a) => [a] -> [(a, a)] -> [[a]]
+kosaraju vs as = sccs
+  where
+    -- Passo 1: DFS per ottenere l'ordine di completamento
+    ordineDiCompletamento = dfs vs as [] []
+    -- Passo 2: Invertire il grafo
+    archiInvertiti = invertiArchi as
+    -- Passo 3: DFS sulle componenti fortemente connesse
+    sccs = getSCCs (reverse ordineDiCompletamento) archiInvertiti []
+
+-- Calcola l'indegree di ogni componente
+calcolaIndegree :: (Eq a) => a -> [(a, a)] -> Int
+calcolaIndegree comp archi =
+    length [() | (_,j) <- archi, j == comp]
+
+-- Conta le SCC con indegree = 0 diverse da quella che contiene il nodo di partenza
+calcolaComponentiConIndegreeZero :: (Eq a) => a -> [[a]] -> [(Int,Int)] -> Int
+calcolaComponentiConIndegreeZero start sccs compressedEdges =
+    length [ comp
+           | (i, comp) <- zip [0..] sccs
+           , i /= startSCC
+           , calcolaIndegree i compressedEdges == 0
+           ]
+  where
+    startSCC = findSCCIndex start sccs
+
 main :: IO ()
 main = do
-    let vs = [0,1,2,3,4,5,6,7]
-    let as = [(0,1),(1,2),(2,0),(2,3),(3,4),(4,5),(4,6),(4,7),(5,6),(6,7)]
+    (vs, as) <- leggiDatiDaFile "input.txt"
     putStrLn "Grafo iniziale:"
     print as
-    let ordineDiCompletamento  = dfs vs as [] []
-    let archiInvertiti = invertiArchi as
-    putStrLn "Grafo con archi invertiti:"
-    print archiInvertiti
-    let sccs = getSCCs (reverse ordineDiCompletamento) archiInvertiti []
+    let sccs = kosaraju vs as
     putStrLn "Componenti fortemente connesse:"
     print sccs
     let sccsGraph = compressGraph sccs as
     putStrLn "Grafo delle componenti fortemente connesse:"
     print sccsGraph
-
--- acquisisciVerticePartenza
-
--- calcolaNumeroComponentiNonRaggiungibili
+    start <- acquisisciVerticePartenza
+    let count = calcolaComponentiConIndegreeZero start sccs sccsGraph
+    putStrLn $ "Numero di SCC con indegree = 0 diverse da quella contenente " ++ show start ++ ": " ++ show count
