@@ -171,7 +171,8 @@ stampaIndegree n archi = do
 
 main :: IO ()
 main = do
-    (vertici, archi) <- leggiDatiDaFile "input.txt"
+    let vertici = [0,1,2,3,4,5,6,7]
+    let archi = [(0,1),(1,2),(2,0),(2,3),(3,4),(4,5),(4,6),(5,6),(6,7)]
 
     stampaLista "Grafo iniziale (archi):" archi
 

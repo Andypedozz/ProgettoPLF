@@ -1,156 +1,191 @@
--- ##################################################################
--- #         Corso di Programmazione Logica e Funzionale            #
--- #        Progetto per la sessione autunnale A.A 2024/2025        #
--- #                        di Andrea Pedini                        #
--- #                       Matricola: 322918                        #
--- #                       e Matteo Fraternali                      #
--- #                      Matricola: en m arcord                    #
--- #                       Anno di corso: terzo                     #
--- ##################################################################
+-- ##############################################################
+-- # Corso di Programmazione Logica e Funzionale                #
+-- # Progetto per la sessione autunnale A.A. 2024/2025          #
+-- # di Andrea Pedini                                          #
+-- # Matricola: 322918                                         #
+-- # e Matteo Fraternali                                       #
+-- # Anno di corso: terzo                                      #
+-- ##############################################################
 
-{-
-    Specifica: Scrivere un programma Haskell e un programma Prolog che:
-    - acquisiscano da file una lista di numeri interi e una lista di coppie di numeri interi
-    - generino un grafo orientato con i dati acquisiti da file
-    - acquisiscano un numero intero tra i vertici del grafo
-    - generino un nuovo grafo i cui vertici sono le componenti fortemente connesse del grafo di partenza
-    - calcolino e stampino a schermo il numero di componenti fortemente connesse con grado entrante uguale a 0
-      diverse dalla componente contenente il vertice di partenza
+{- Specifica:
+ - acquisire da file una lista di vertici e una lista di archi
+ - costruire un grafo orientato
+ - calcolare le componenti fortemente connesse
+ - costruire il grafo compresso
+ - contare le componenti con indegree 0
+   diverse da quella contenente un vertice scelto
 -}
 
-module Main where
 import Data.Char (isSpace)
 import Data.List (nub)
 
-type GrafoDir a = ([a], [(a, a)])
- 
-grafoDir :: (Eq a) => GrafoDir a -> Bool
-grafoDir (vs, as) = controlla_v vs && controlla_a as vs
-    where
-        controlla_v [] = True
-        controlla_v (v : vs) = notElem v vs && controlla_v vs
-        controlla_a [] _ = True
-        controlla_a ((v1, v2) : as) vs = elem v1 vs && elem v2 vs &&
-                                         notElem (v1, v2) as && controlla_a as vs
+{- Tipo per rappresentare un grafo diretto -}
+type Grafo = ([Int], [(Int, Int)])
 
+{- Elimina spazi bianchi iniziali e finali -}
 trim :: String -> String
 trim = f . f
   where
     f = reverse . dropWhile isSpace
 
-leggiDatiDaFile :: FilePath -> IO ([Int], [(Int,Int)])
+{- Lettura dei dati da file (non usata nel main di esempio) -}
+leggiDatiDaFile :: FilePath -> IO Grafo
 leggiDatiDaFile path = do
-  content <- readFile path
-  let ls = filter (not . null) . map (trim . takeWhile (/= '\r')) $ lines content
-  case ls of
-    (l1:l2:_) -> do
-      let vs = read l1 :: [Int]
-      let as = read l2 :: [(Int,Int)]
-      pure (vs, as)
-    _ -> error "File malformato: servono due righe ([Int] e [(Int,Int)])."
+    contenuto <- readFile path
+    let righe = filter (not . null) $
+                map (trim . takeWhile (/= '\r')) (lines contenuto)
+    processaRighe righe
+  where
+    processaRighe (l1:l2:_) = return (read l1, read l2)
+    processaRighe _ = error "Errore: file malformato"
 
--- Funzione per ottenere i vertici adiacenti a un vertice
-adiac :: (Eq a) => a -> [(a, a)] -> [a]
-adiac _ [] = []
-adiac v ((v1, v2) : as) | v == v1 = v2 : adiac v as
-                        | v /= v1 = adiac v as
+{- Vertici adiacenti -}
+adiacenti :: Int -> [(Int, Int)] -> [Int]
+adiacenti _ [] = []
+adiacenti v ((x,y):as)
+    | v == x    = y : adiacenti v as
+    | otherwise = adiacenti v as
 
--- params: 
-dfs :: (Eq a) => [a] -> [(a,a)] -> [a] -> [a] -> [a]
-dfs [] _ _ stack = stack
-dfs (u:us) as visited stack
-    | u `elem` visited = dfs us as visited stack
-    | otherwise = dfs vicini as visited' stack ++ [u]
-        where
-            visited' = u : visited
-            vicini = adiac u as
+{- DFS per ordine di completamento -}
+dfs :: [Int] -> [(Int, Int)] -> [Int] -> [Int] -> [Int]
+dfs [] _ _ pila = pila
+dfs (v:vs) archi visitati pila
+    | v `elem` visitati = dfs vs archi visitati pila
+    | otherwise =
+        dfs vicini archi visitati' pila ++ [v]
+  where
+    visitati' = v : visitati
+    vicini    = adiacenti v archi
 
--- params: edges => reversedEdges
-invertiArchi :: (Eq a) => [(a, a)] -> [(a, a)]
+{- Inversione archi -}
+invertiArchi :: [(Int, Int)] -> [(Int, Int)]
 invertiArchi [] = []
-invertiArchi ((u,v) : es) = (v,u) : invertiArchi es
+invertiArchi ((x,y):as) = (y,x) : invertiArchi as
 
--- DFS che raccoglie un'intera componente
--- params: stack, edges, visitedGlobal, visitedLocal => visitedLocal aggiornato
-dfsSCC :: (Eq a) => [a] -> [(a,a)] -> [a] -> [a] -> [a]
-dfsSCC [] _ _ visitedLocal = visitedLocal
-dfsSCC (u:us) as visitedGlobal visitedLocal
-    | u `elem` visitedLocal = dfsSCC us as visitedGlobal visitedLocal
-    | u `elem` visitedGlobal = dfsSCC us as visitedGlobal visitedLocal
+{- DFS per una singola SCC -}
+dfsComponente :: [Int] -> [(Int, Int)] -> [Int] -> [Int] -> [Int]
+dfsComponente [] _ _ visitatiLocali = visitatiLocali
+dfsComponente (v:vs) archi visitatiGlobali visitatiLocali
+    | v `elem` visitatiLocali = dfsComponente vs archi visitatiGlobali visitatiLocali
+    | v `elem` visitatiGlobali = dfsComponente vs archi visitatiGlobali visitatiLocali
     | otherwise =
-        dfsSCC (vicini ++ us) as visitedGlobal (visitedLocal ++ [u])
+        dfsComponente (vicini ++ vs) archi visitatiGlobali (visitatiLocali ++ [v])
   where
-    vicini = adiac u as
+    vicini = adiacenti v archi
 
--- Calcolo delle SCCs
-getSCCs :: (Eq a) => [a] -> [(a,a)] -> [a] -> [[a]]
-getSCCs [] _ _ = []
-getSCCs (u:us) as visitedGlobal
-    | u `elem` visitedGlobal = getSCCs us as visitedGlobal
+{- Calcolo SCC -}
+calcolaSCC :: [Int] -> [(Int, Int)] -> [Int] -> [[Int]]
+calcolaSCC [] _ _ = []
+calcolaSCC (v:vs) archi visitati
+    | v `elem` visitati = calcolaSCC vs archi visitati
     | otherwise =
-        scc : getSCCs us as visitedGlobal'
+        componente : calcolaSCC vs archi visitati'
   where
-    scc         = dfsSCC [u] as visitedGlobal []
-    visitedGlobal' = visitedGlobal ++ scc
+    componente = dfsComponente [v] archi visitati []
+    visitati'  = visitati ++ componente
 
--- Dato un vertice, restituisce l'indice della SCC che lo contiene
-findSCCIndex :: (Eq a) => a -> [[a]] -> Int
-findSCCIndex v sccs = head [i | (i,comp) <- zip [0..] sccs, v `elem` comp]
-
--- Costruzione del grafo compresso
-compressGraph :: (Eq a) => [[a]] -> [(a,a)] -> [(Int,Int)]
-compressGraph sccs edges =
-    nub [(i,j) |
-        (u,v) <- edges,
-        let i = findSCCIndex u sccs,
-        let j = findSCCIndex v sccs,
-        i /= j]
-
--- Legge un vertice da tastiera
-acquisisciVerticePartenza :: IO Int
-acquisisciVerticePartenza = do
-    putStrLn "Inserisci il vertice di partenza:"
-    input <- getLine
-    let v = read input :: Int
-    return v
-
-kosaraju :: (Eq a) => [a] -> [(a, a)] -> [[a]]
-kosaraju vs as = sccs
+{- Algoritmo di Kosaraju -}
+kosaraju :: [Int] -> [(Int, Int)] -> [[Int]]
+kosaraju vertici archi =
+    calcolaSCC (reverse ordine) archiInvertiti []
   where
-    -- Passo 1: DFS per ottenere l'ordine di completamento
-    ordineDiCompletamento = dfs vs as [] []
-    -- Passo 2: Invertire il grafo
-    archiInvertiti = invertiArchi as
-    -- Passo 3: DFS sulle componenti fortemente connesse
-    sccs = getSCCs (reverse ordineDiCompletamento) archiInvertiti []
+    ordine         = dfs vertici archi [] []
+    archiInvertiti = invertiArchi archi
 
--- Calcola l'indegree di ogni componente
-calcolaIndegree :: (Eq a) => a -> [(a, a)] -> Int
-calcolaIndegree comp archi =
-    length [() | (_,j) <- archi, j == comp]
+{- Indice SCC che contiene un vertice -}
+indiceSCC :: Int -> [[Int]] -> Int
+indiceSCC v sccs =
+    head [ i | (i,comp) <- zip [0..] sccs, v `elem` comp ]
 
--- Conta le SCC con indegree = 0 diverse da quella che contiene il nodo di partenza
-calcolaComponentiConIndegreeZero :: (Eq a) => a -> [[a]] -> [(Int,Int)] -> Int
-calcolaComponentiConIndegreeZero start sccs compressedEdges =
-    length [ comp
-           | (i, comp) <- zip [0..] sccs
-           , i /= startSCC
-           , calcolaIndegree i compressedEdges == 0
+{- Costruzione grafo compresso -}
+comprimiGrafo :: [[Int]] -> [(Int, Int)] -> [(Int, Int)]
+comprimiGrafo sccs archi =
+    nub [ (i,j)
+        | (x,y) <- archi
+        , let i = indiceSCC x sccs
+        , let j = indiceSCC y sccs
+        , i /= j ]
+
+{- Indegree di una componente -}
+indegree :: Int -> [(Int, Int)] -> Int
+indegree c archi =
+    length [ () | (_,y) <- archi, y == c ]
+
+{- Conteggio SCC con indegree 0 -}
+contaSCCZero :: Int -> [[Int]] -> [(Int, Int)] -> Int
+contaSCCZero v sccs archi =
+    length [ i
+           | (i,_) <- zip [0..] sccs
+           , i /= sccPartenza
+           , indegree i archi == 0
            ]
   where
-    startSCC = findSCCIndex start sccs
+    sccPartenza = indiceSCC v sccs
+
+{- Lettura vertice di partenza -}
+leggiVertice :: IO Int
+leggiVertice = do
+    putStrLn "Inserisci il vertice di partenza:"
+    read <$> getLine
+
+--------------------------------------------------
+-- FUNZIONI DI STAMPA (visualizzazione migliorata)
+--------------------------------------------------
+
+stampaLista :: Show a => String -> [a] -> IO ()
+stampaLista titolo xs = do
+    putStrLn titolo
+    mapM_ (\x -> putStrLn ("  - " ++ show x)) xs
+    putStrLn ""
+
+stampaSCC :: [[Int]] -> IO ()
+stampaSCC sccs = do
+    putStrLn "Componenti fortemente connesse:"
+    mapM_ stampa (zip [0..] sccs)
+    putStrLn ""
+  where
+    stampa (i,comp) =
+        putStrLn ("  C" ++ show i ++ " = " ++ show comp)
+
+stampaGrafoCompresso :: [(Int,Int)] -> IO ()
+stampaGrafoCompresso archi = do
+    putStrLn "Grafo compresso (tra componenti):"
+    mapM_ stampaArco archi
+    putStrLn ""
+  where
+    stampaArco (i,j) =
+        putStrLn ("  C" ++ show i ++ " -> C" ++ show j)
+
+stampaIndegree :: Int -> [(Int,Int)] -> IO ()
+stampaIndegree n archi = do
+    putStrLn "Indegree delle componenti:"
+    mapM_ stampa [0..n-1]
+    putStrLn ""
+  where
+    stampa i =
+        putStrLn ("  C" ++ show i ++ " : " ++ show (indegree i archi))
+
+--------------------------------------------------
+-- MAIN
+--------------------------------------------------
 
 main :: IO ()
 main = do
-    (vs, as) <- leggiDatiDaFile "input.txt"
-    putStrLn "Grafo iniziale:"
-    print as
-    let sccs = kosaraju vs as
-    putStrLn "Componenti fortemente connesse:"
-    print sccs
-    let sccsGraph = compressGraph sccs as
-    putStrLn "Grafo delle componenti fortemente connesse:"
-    print sccsGraph
-    start <- acquisisciVerticePartenza
-    let count = calcolaComponentiConIndegreeZero start sccs sccsGraph
-    putStrLn $ "Numero di SCC con indegree = 0 diverse da quella contenente " ++ show start ++ ": " ++ show count
+    (vertici, archi) <- leggiDatiDaFile "input.txt"
+
+    stampaLista "Grafo iniziale (archi):" archi
+
+    let sccs = kosaraju vertici archi
+    stampaSCC sccs
+
+    let grafoCompresso = comprimiGrafo sccs archi
+    stampaGrafoCompresso grafoCompresso
+
+    stampaIndegree (length sccs) grafoCompresso
+
+    v <- leggiVertice
+    let risultato = contaSCCZero v sccs grafoCompresso
+
+    putStrLn $
+        "Numero di SCC con indegree 0 (esclusa la componente contenente "
+        ++ show v ++ "): " ++ show risultato
