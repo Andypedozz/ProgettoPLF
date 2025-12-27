@@ -22,6 +22,31 @@ import Data.List (nub)
 {- Tipo per rappresentare un grafo diretto -}
 type Grafo = ([Int], [(Int, Int)])
 
+--------------------------------------------------
+-- MAIN
+--------------------------------------------------
+
+main :: IO ()
+main = do
+    (vertici, archi) <- leggiDatiDaFile "input.txt"
+
+    stampaLista "Grafo iniziale (archi):" archi
+
+    let compFortementeConn = kosaraju vertici archi
+    stampaSCC compFortementeConn
+
+    let grafoCompresso = comprimiGrafo compFortementeConn archi
+    stampaGrafoCompresso grafoCompresso
+
+    stampaIndegree (length compFortementeConn) grafoCompresso
+
+    v <- leggiVertice
+    let risultato = contaSCCZero v compFortementeConn grafoCompresso
+
+    putStrLn $
+        "Numero di SCC con indegree 0 (esclusa la componente contenente "
+        ++ show v ++ "): " ++ show risultato
+
 {- Elimina spazi bianchi iniziali e finali -}
 trim :: String -> String
 trim = f . f
@@ -46,7 +71,7 @@ adiacenti v ((x,y):as)
     | v == x    = y : adiacenti v as
     | otherwise = adiacenti v as
 
-{- DFS per ordine di completamento -}
+{- DFS per ottenere l'ordine di completamento -}
 dfs :: [Int] -> [(Int, Int)] -> [Int] -> [Int] -> [Int]
 dfs [] _ _ pila = pila
 dfs (v:vs) archi visitati pila
@@ -106,18 +131,18 @@ comprimiGrafo sccs archi =
         , let j = indiceSCC y sccs
         , i /= j ]
 
-{- Indegree di una componente -}
-indegree :: Int -> [(Int, Int)] -> Int
-indegree c archi =
+{- Grado entrante di una componente -}
+gradoEntrante :: Int -> [(Int, Int)] -> Int
+gradoEntrante c archi =
     length [ () | (_,y) <- archi, y == c ]
 
-{- Conteggio SCC con indegree 0 -}
+{- Conteggio SCC con grado entrante 0 -}
 contaSCCZero :: Int -> [[Int]] -> [(Int, Int)] -> Int
 contaSCCZero v sccs archi =
     length [ i
            | (i,_) <- zip [0..] sccs
            , i /= sccPartenza
-           , indegree i archi == 0
+           , gradoEntrante i archi == 0
            ]
   where
     sccPartenza = indiceSCC v sccs
@@ -163,29 +188,4 @@ stampaIndegree n archi = do
     putStrLn ""
   where
     stampa i =
-        putStrLn ("  C" ++ show i ++ " : " ++ show (indegree i archi))
-
---------------------------------------------------
--- MAIN
---------------------------------------------------
-
-main :: IO ()
-main = do
-    (vertici, archi) <- leggiDatiDaFile "input.txt"
-
-    stampaLista "Grafo iniziale (archi):" archi
-
-    let sccs = kosaraju vertici archi
-    stampaSCC sccs
-
-    let grafoCompresso = comprimiGrafo sccs archi
-    stampaGrafoCompresso grafoCompresso
-
-    stampaIndegree (length sccs) grafoCompresso
-
-    v <- leggiVertice
-    let risultato = contaSCCZero v sccs grafoCompresso
-
-    putStrLn $
-        "Numero di SCC con indegree 0 (esclusa la componente contenente "
-        ++ show v ++ "): " ++ show risultato
+        putStrLn ("  C" ++ show i ++ " : " ++ show (gradoEntrante i archi))

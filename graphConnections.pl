@@ -1,119 +1,209 @@
-% ##################################################################
-% #         Corso di Programmazione Logica e Funzionale            #
-% #        Progetto per la sessione autunnale A.A 2024/2025        #
-% #                        Andrea Pedini & Matteo Fraternali      #
-% ##################################################################
+% ##############################################################
+% # Corso di Programmazione Logica e Funzionale                #
+% # Progetto per la sessione autunnale A.A. 2024/2025          #
+% # Versione Prolog (GProlog)                                  #
+% # di Andrea Pedini                                          #
+% ##############################################################
 
-:- initialization(main).
+% -------------------------
+% DEFINIZIONE DEL GRAFO
+% -------------------------
 
-% ============================================================
-% DFS e funzioni ausiliarie
-% ============================================================
+vertice(0).
+vertice(1).
+vertice(2).
+vertice(3).
+vertice(4).
+vertice(5).
+vertice(6).
+vertice(7).
 
-% Vertici adiacenti
-adiac(V, [], []).
-adiac(V, [(V,U)|As], [U|Adj]) :-
-    adiac(V, As, Adj).
-adiac(V, [(X,Y)|As], Adj) :-
-    V \= X,
-    adiac(V, As, Adj).
+arco(0,1).
+arco(1,2).
+arco(2,0).
+arco(2,3).
+arco(3,4).
+arco(4,5).
+arco(4,6).
+arco(5,6).
+arco(6,7).
 
-% DFS per ordine di completamento
-dfs([], _, Visited, Visited).
-dfs([U|Us], Edges, Visited, Stack) :-
-    member(U, Visited), !,
-    dfs(Us, Edges, Visited, Stack).
-dfs([U|Us], Edges, Visited, Stack) :-
-    \+ member(U, Visited),
-    adiac(U, Edges, Vicini),
-    dfs(Vicini, Edges, [U|Visited], NewVisited),
-    dfs(Us, Edges, NewVisited, Stack).
+% -------------------------
+% UTILITY LISTE
+% -------------------------
 
-% Inverti archi
-inverti_archi([], []).
-inverti_archi([(U,V)|Es], [(V,U)|EsInv]) :-
-    inverti_archi(Es, EsInv).
+membro(X, [X|_]).
+membro(X, [_|T]) :- membro(X, T).
 
-% DFS per raccogliere una SCC
-dfs_scc([], _, _, VisitedLocal, VisitedLocal).
-dfs_scc([U|Us], Edges, VisitedGlobal, VisitedLocal, Result) :-
-    ( member(U, VisitedLocal) ->
-        dfs_scc(Us, Edges, VisitedGlobal, VisitedLocal, Result)
-    ; member(U, VisitedGlobal) ->
-        dfs_scc(Us, Edges, VisitedGlobal, VisitedLocal, Result)
-    ; adiac(U, Edges, Vicini),
-      append(Vicini, Us, NewStack),
-      append(VisitedLocal, [U], NewVisitedLocal),
-      dfs_scc(NewStack, Edges, VisitedGlobal, NewVisitedLocal, Result)
-    ).
+aggiungi_unico(X, L, L) :- membro(X, L), !.
+aggiungi_unico(X, L, [X|L]).
 
-% Calcolo tutte le SCC
-get_sccs([], _, _, []).
-get_sccs([U|Us], Edges, VisitedGlobal, [SCC|SCCs]) :-
-    member(U, VisitedGlobal), !,
-    get_sccs(Us, Edges, VisitedGlobal, SCCs).
-get_sccs([U|Us], Edges, VisitedGlobal, [SCC|SCCs]) :-
-    dfs_scc([U], Edges, VisitedGlobal, [], SCC),
-    append(VisitedGlobal, SCC, NewVisitedGlobal),
-    get_sccs(Us, Edges, NewVisitedGlobal, SCCs).
+unione([], L, L).
+unione([H|T], L, R) :-
+    aggiungi_unico(H, L, L1),
+    unione(T, L1, R).
 
-% Trova indice della SCC contenente un vertice
-find_scc_index(V, SCCs, Index) :-
-    nth0(Index, SCCs, Comp),
-    member(V, Comp), !.
+% -------------------------
+% ADIACENZA
+% -------------------------
 
-% Costruzione grafo compresso
-compress_graph(SCCs, Edges, Compressed) :-
-    findall((I,J),
-        ( member((U,V), Edges),
-          find_scc_index(U, SCCs, I),
-          find_scc_index(V, SCCs, J),
-          I \= J
-        ),
-        Pairs),
-    sort(Pairs, Compressed).
+adiacente(X, Y) :- arco(X, Y).
 
-% Calcola indegree di una componente
-indegree(Comp, Edges, Count) :-
-    include([(_,J)]>>(J=Comp), Edges, L),
-    length(L, Count).
+adiacenti(X, Lista) :-
+    findall(Y, adiacente(X, Y), Lista).
 
-% Conta SCC con indegree 0 diverse da quella di partenza
-count_indegree_zero(Start, SCCs, Compressed, Count) :-
-    find_scc_index(Start, SCCs, StartIndex),
-    findall(I,
-        (nth0(I, SCCs, _),
-         I \= StartIndex,
-         indegree(I, Compressed, 0)),
-        List),
-    length(List, Count).
+% -------------------------
+% DFS CON ORDINE DI FINE
+% -------------------------
 
-% Algoritmo di Kosaraju
-kosaraju(Vs, Edges, SCCs) :-
-    dfs(Vs, Edges, [], Ordine),
-    inverti_archi(Edges, RevEdges),
-    reverse(Ordine, RevOrdine),
-    get_sccs(RevOrdine, RevEdges, [], SCCs).
+dfs([], Visitati, Visitati).
+dfs([V|Vs], Visitati, Ris) :-
+    membro(V, Visitati), !,
+    dfs(Vs, Visitati, Ris).
+dfs([V|Vs], Visitati, Ris) :-
+    adiacenti(V, Vicini),
+    dfs(Vicini, [V|Visitati], Visitati1),
+    dfs(Vs, Visitati1, Ris).
 
-% ============================================================
-% Main con dati di esempio
-% ============================================================
+ordine_completamento(Ordine) :-
+    findall(V, vertice(V), Vertici),
+    dfs(Vertici, [], Ordine).
+
+% -------------------------
+% GRAFO INVERTITO
+% -------------------------
+
+arco_invertito(X, Y) :- arco(Y, X).
+
+adiacenti_inv(X, Lista) :-
+    findall(Y, arco_invertito(X, Y), Lista).
+
+% -------------------------
+% DFS PER UNA SCC
+% -------------------------
+
+dfs_scc([], _, Visitati, Visitati).
+dfs_scc([V|Vs], VisitatiGlobali, VisitatiLocali, Ris) :-
+    membro(V, VisitatiLocali), !,
+    dfs_scc(Vs, VisitatiGlobali, VisitatiLocali, Ris).
+dfs_scc([V|Vs], VisitatiGlobali, VisitatiLocali, Ris) :-
+    membro(V, VisitatiGlobali), !,
+    dfs_scc(Vs, VisitatiGlobali, VisitatiLocali, Ris).
+dfs_scc([V|Vs], VisitatiGlobali, VisitatiLocali, Ris) :-
+    adiacenti_inv(V, Vicini),
+    dfs_scc(Vicini, VisitatiGlobali, [V|VisitatiLocali], Visitati1),
+    dfs_scc(Vs, VisitatiGlobali, Visitati1, Ris).
+
+% -------------------------
+% CALCOLO SCC (KOSARAJU)
+% -------------------------
+
+calcola_scc([], _, []).
+calcola_scc([V|Vs], Visitati, Sccs) :-
+    membro(V, Visitati), !,
+    calcola_scc(Vs, Visitati, Sccs).
+calcola_scc([V|Vs], Visitati, [Scc|Rest]) :-
+    dfs_scc([V], Visitati, [], Scc),
+    unione(Scc, Visitati, Visitati1),
+    calcola_scc(Vs, Visitati1, Rest).
+
+kosaraju(Sccs) :-
+    ordine_completamento(Ord),
+    reverse(Ord, OrdRev),
+    calcola_scc(OrdRev, [], Sccs).
+
+% -------------------------
+% INDICE DELLA SCC
+% -------------------------
+
+indice_scc(V, [Scc|_], 0) :- membro(V, Scc), !.
+indice_scc(V, [_|Rest], I) :-
+    indice_scc(V, Rest, I1),
+    I is I1 + 1.
+
+% -------------------------
+% GRAFO COMPRESSO
+% -------------------------
+
+arco_compresso(Sccs, I, J) :-
+    arco(X, Y),
+    indice_scc(X, Sccs, I),
+    indice_scc(Y, Sccs, J),
+    I \= J.
+
+archi_compressi(Sccs, Archi) :-
+    findall((I,J), arco_compresso(Sccs, I, J), A),
+    sort(A, Archi).
+
+% -------------------------
+% INDEGREE
+% -------------------------
+
+indegree(_, [], 0).
+indegree(N, [(_,N)|T], R) :-
+    indegree(N, T, R1),
+    R is R1 + 1.
+indegree(N, [_|T], R) :-
+    indegree(N, T, R).
+
+% -------------------------
+% CONTEGGIO SCC CON INDEGREE 0
+% -------------------------
+
+conta_scc_zero(Start, Risultato) :-
+    kosaraju(Sccs),
+    archi_compressi(Sccs, Archi),
+    indice_scc(Start, Sccs, SStart),
+    length(Sccs, N),
+    conta(0, N, SStart, Archi, Risultato).
+
+conta(I, N, _, _, 0) :- I >= N, !.
+conta(I, N, SStart, Archi, R) :-
+    I < N,
+    indegree(I, Archi, D),
+    conta(I+1, N, SStart, Archi, R1),
+    ( I \= SStart, D =:= 0 -> R is R1 + 1 ; R = R1 ).
+
+% -------------------------
+% UTILITY PER STAMPARE SCC
+% -------------------------
+
+stampa_scc(Sccs) :- stampa_scc(Sccs, 0).
+
+stampa_scc([], _).
+stampa_scc([Scc|Rest], I) :-
+    write(I), write(' -> '), write(Scc), nl,
+    I1 is I + 1,
+    stampa_scc(Rest, I1).
+
+% -------------------------
+% ESEMPIO DI ESECUZIONE
+% -------------------------
 
 main :-
-    % Dati di esempio
-    Vs = [1,2,3,4,5,6],
-    Edges = [(1,2),(2,3),(3,1),(4,5),(5,6),(6,4),(3,4)],
-    writeln('Grafo iniziale:'),
-    writeln(Edges),
-    kosaraju(Vs, Edges, SCCs),
-    writeln('Componenti fortemente connesse:'),
-    writeln(SCCs),
-    compress_graph(SCCs, Edges, Compressed),
-    writeln('Grafo delle componenti fortemente connesse:'),
-    writeln(Compressed),
-    % Vertice di partenza di esempio
-    Start = 1,
-    format('Vertice di partenza: ~w~n', [Start]),
-    count_indegree_zero(Start, SCCs, Compressed, Count),
-    format('Numero di SCC con indegree = 0 diverse da quella contenente ~w: ~w~n', [Start, Count]),
-    halt.
+    Start = 7,  % nodo di partenza da considerare
+    write('Original Graph:'), nl,
+
+    % --- stampa vertici ---
+    findall(V, vertice(V), Vertici),
+    write('Vertici: '), write(Vertici), nl,
+
+    % --- stampa archi ---
+    findall((X,Y), arco(X,Y), Archi),
+    write('Archi: '), write(Archi), nl, nl,
+
+    % --- calcolo SCC ---
+    kosaraju(Sccs),
+    write('Strongly Connected Components:'), nl,
+    stampa_scc(Sccs), nl,
+
+    % --- archi compressi ---
+    archi_compressi(Sccs, ArchiComp),
+    write('Compressed Graph Edges: '), write(ArchiComp), nl, nl,
+
+    % --- stampa nodo di partenza ---
+    write('Start Node: '), write(Start), nl,
+
+    % --- conteggio SCC con indegree 0 (escludendo start) ---
+    conta_scc_zero(Start, Count),
+    write('Number of SCCs with indegree 0 (excluding start): '), write(Count), nl.
