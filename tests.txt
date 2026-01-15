@@ -4,56 +4,56 @@ Grafo 1 --> Passed
 4
 Expected = 0
 
-Grafo 2 --> Failed (Grafo con SCC isolate)
+Grafo 2 --> Passed (Grafo con SCC isolate)
 [1,2,3,4,5,6]
 [(1,2),(2,3),(3,1),(4,5)]
 4
-Expected = 
+Expected = 2
 
-Grafo 3 --> Failed
+Grafo 3 --> Passed
 [1,2,3,4,5,6]
 [(1,2),(1,3),(2,4),(3,4),(4,5),(4,6)]
 2
-Expected = 
+Expected = 1
 
 Grafo 4 --> Passed
 [1,2,3,4,5,6,7]
 [(1,2),(2,3),(3,1),(3,4),(4,5),(5,3),(5,6),(6,7)]
 5
-Expected = 
+Expected = 0
 
-Grafo 5 --> Failed
+Grafo 5 --> Passed
 [1,2,3,4,5,6]
 [(1,2),(2,3),(3,3),(4,5)]
 6
-Expected = 
+Expected = 2
 
-Grafo 6 --> Failed
+Grafo 6 --> Passed
 [1,2,3,4,5,6]
 [(1,2),(1,3),(1,4),(1,5),(1,6)]
 3
-Expected = 
+Expected = 1
 
-Grafo 7 --> Failed
+Grafo 7 --> Passed
 [1,2,3,4,5,6,7,8]
 [(1,2),(2,3),(3,1),(4,5),(5,6),(6,4),(6,7),(7,8)]
 8
-Expected = 
+Expected = 2
 
 Grafo 8 --> Passed
 [1,2,3,4,5,6,7]
 [(1,2),(2,3),(3,4),(4,5),(5,6),(6,7),(7,4)]
 7
-Expected = 
+Expected = 1
 
 Grafo 9 --> Passed
 [1,2,3,4,5,6,7,8]
 [(1,2),(2,3),(3,1),(3,4),(4,5),(5,3),(5,6),(6,7),(7,6),(7,8)]
 8
-Expected = 
+Expected = 1
 
-Grafo 10 --> Failed
+Grafo 10 --> Passed
 [1,2,3,4,5,6,7]
 [(1,2),(2,3),(3,1),(2,4),(4,5),(5,6),(6,4),(6,7)]
 6
-Expected = 
+Expected = 1
