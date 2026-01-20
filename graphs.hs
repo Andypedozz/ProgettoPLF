@@ -1,6 +1,6 @@
 -- ##############################################################
 -- # Corso di Programmazione Logica e Funzionale                #
--- # Progetto per la sessione autunnale A.A. 2024/2025          #
+-- # Progetto per la sessione invernale A.A. 2025/2026          #
 -- ##############################################################
 
 import Data.List (nub)
@@ -24,21 +24,35 @@ main = do
         archi   = read (righe !! 1) :: [(Int,Int)]
 
     -- Acquisizione del vertice di partenza
-    vPartenza <- acquisisciVertice vertici
 
-    putStrLn "======================================"
-    putStrLn "Grafo letto da file"
-    putStrLn "SCC:"
+    putStrLn "\n======================================"
+    putStrLn "            GRAFO LETTO DA FILE       "
+    putStrLn "--------------------------------------"
+    putStrLn $ "Vertici: " ++ show vertici
+    putStrLn $ "Archi:   " ++ show archi
+
+    -- Calcolo SCC
     let sccs = kosaraju vertici archi
-    mapM_ print sccs
+    putStrLn "\n======================================"
+    putStrLn "       COMPONENTI FORTEMENTE CONNESSE "
+    putStrLn "--------------------------------------"
+    mapM_ (\(i,c) -> putStrLn $ "SCC " ++ show i ++ ": " ++ show c) $ zip [0..] sccs
 
+    -- Grafo compresso
     let gc = comprimiGrafo sccs archi
-    putStrLn "Grafo compresso:"
-    mapM_ print gc
+    putStrLn "\n======================================"
+    putStrLn "           GRAFO COMPRESSO             "
+    putStrLn "--------------------------------------"
+    mapM_ (\(i,j) -> putStrLn $ "SCC_" ++ show i ++ " -> SCC_" ++ show j) gc
 
-    putStrLn $
-        "SCC con indegree 0 (esclusa partenza): "
-        ++ show (contaSCCZero vPartenza sccs gc)
+    vPartenza <- acquisisciVertice vertici
+    
+    -- SCC con indegree 0
+    let countZero = contaSCCZero vPartenza sccs gc
+    putStrLn "\n======================================"
+    putStrLn $ "Numero di SCC con indegree 0 (esclusa partenza): " ++ show countZero
+    putStrLn "======================================\n"
+
 
 --------------------------------------------------
 -- FUNZIONE DI ACQUISIZIONE VERTICE

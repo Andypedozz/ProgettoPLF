@@ -16,3 +16,18 @@ Successivamente il programma dovrà:
   rappresentano i collegamenti tra le componenti fortemente connesse distinte
 - stampare a schermo il numero di componenti fortemente connesse diverse dalla
   componente contenente l'aeroporto di partenza che hanno grado entrante uguale a 0 (ossia il numero di archi da aggiungere per rendere tutto il grafo raggiungibile).
+
+Passi algoritmo:
+* acquisizione del grafo
+    * leggere da un file una lista di vertici e una lista di archi per
+      costruire un grafo diretto
+* visualizzazione iniziale
+    * stampa a schermo degli archi del grafo così come sono stati letti
+* calcolo delle componenti fortemente connesse
+    * effettuare una visita in profondità dell'intero grafo
+    * invertire gli archi
+    * effettuare una nuova visita in profondità del grafo invertito
+* costruzione del grafo compresso
+* calcolo del grado entrante delle componenti
+* scelta del vertice di partenza
+* conteggio delle componenti indipendenti
