@@ -1,20 +1,7 @@
 -- ##############################################################
 -- # Corso di Programmazione Logica e Funzionale                #
 -- # Progetto per la sessione autunnale A.A. 2024/2025          #
--- # di Andrea Pedini                                          #
--- # Matricola: 322918                                         #
--- # e Matteo Fraternali                                       #
--- # Anno di corso: terzo                                      #
 -- ##############################################################
-
-{- Specifica:
- - acquisire da file una lista di vertici e una lista di archi
- - costruire un grafo orientato
- - calcolare le componenti fortemente connesse
- - costruire il grafo compresso
- - contare le componenti con indegree 0
-   diverse da quella contenente un vertice scelto
--}
 
 import Data.List (nub)
 
@@ -23,76 +10,49 @@ import Data.List (nub)
 --------------------------------------------------
 
 type Grafo = ([Int], [(Int, Int)])
-type Caso  = ([Int], [(Int, Int)], Int)
-
---------------------------------------------------
--- DATI
---------------------------------------------------
-
-casi :: [Caso]
-casi =
-  [ ([1,2,3,4,5],
-     [(1,2),(2,3),(3,4),(4,5),(5,1)],
-     4)
-
-  , ([1,2,3,4,5,6],
-     [(1,2),(2,3),(3,1),(4,5)],
-     4)
-
-  , ([1,2,3,4,5,6],
-     [(1,2),(1,3),(2,4),(3,4),(4,5),(4,6)],
-     2)
-
-  , ([1,2,3,4,5,6,7],
-     [(1,2),(2,3),(3,1),(3,4),(4,5),(5,3),(5,6),(6,7)],
-     5)
-
-  , ([1,2,3,4,5,6],
-     [(1,2),(2,3),(3,3),(4,5)],
-     6)
-
-  , ([1,2,3,4,5,6],
-     [(1,2),(1,3),(1,4),(1,5),(1,6)],
-     3)
-
-  , ([1,2,3,4,5,6,7,8],
-     [(1,2),(2,3),(3,1),(4,5),(5,6),(6,4),(6,7),(7,8)],
-     8)
-
-  , ([1,2,3,4,5,6,7],
-     [(1,2),(2,3),(3,4),(4,5),(5,6),(6,7),(7,4)],
-     7)
-
-  , ([1,2,3,4,5,6,7,8],
-     [(1,2),(2,3),(3,1),(3,4),(4,5),(5,3),(5,6),(6,7),(7,6),(7,8)],
-     8)
-
-  , ([1,2,3,4,5,6,7],
-     [(1,2),(2,3),(3,1),(2,4),(4,5),(5,6),(6,4),(6,7)],
-     6)
-  ]
 
 --------------------------------------------------
 -- MAIN
 --------------------------------------------------
 
 main :: IO ()
-main = mapM_ eseguiCaso (zip [1..] casi)
+main = do
+    -- Lettura del grafo da file
+    contenuto <- readFile "input.txt"
+    let righe = lines contenuto
+        vertici = read (head righe) :: [Int]
+        archi   = read (righe !! 1) :: [(Int,Int)]
 
-eseguiCaso :: (Int, Caso) -> IO ()
-eseguiCaso (i, (vertici, archi, vPartenza)) = do
+    -- Acquisizione del vertice di partenza
+    vPartenza <- acquisisciVertice vertici
+
     putStrLn "======================================"
-    putStrLn ("Caso #" ++ show i)
+    putStrLn "Grafo letto da file"
     putStrLn "SCC:"
     let sccs = kosaraju vertici archi
     mapM_ print sccs
+
     let gc = comprimiGrafo sccs archi
     putStrLn "Grafo compresso:"
     mapM_ print gc
+
     putStrLn $
         "SCC con indegree 0 (esclusa partenza): "
         ++ show (contaSCCZero vPartenza sccs gc)
-    putStrLn ""
+
+--------------------------------------------------
+-- FUNZIONE DI ACQUISIZIONE VERTICE
+--------------------------------------------------
+
+acquisisciVertice :: [Int] -> IO Int
+acquisisciVertice vertici = do
+    putStrLn $ "Inserisci il vertice di partenza (tra " ++ show vertici ++ "):"
+    input <- getLine
+    case reads input :: [(Int, String)] of
+        [(v,_)] | v `elem` vertici -> return v
+        _ -> do
+            putStrLn "Vertice non valido! Riprova."
+            acquisisciVertice vertici
 
 --------------------------------------------------
 -- FUNZIONI DI GRAFO
@@ -102,7 +62,8 @@ adiacenti :: Int -> [(Int, Int)] -> [Int]
 adiacenti v archi = [ y | (x,y) <- archi, x == v ]
 
 invertiArchi :: [(Int, Int)] -> [(Int, Int)]
-invertiArchi = map (\(x,y) -> (y,x))
+invertiArchi [] = []
+invertiArchi ((x, y) : xs) = (y, x) : invertiArchi xs
 
 --------------------------------------------------
 -- DFS PER ORDINE DI FINE (KOSARAJU 1)
@@ -174,7 +135,7 @@ indiceSCC :: Int -> [[Int]] -> Int
 indiceSCC v sccs =
     case [ i | (i,comp) <- zip [0..] sccs, v `elem` comp ] of
         (i:_) -> i
-        []    -> error ("Vertice non trovato in nessuna SCC: " ++ show v)
+        []    -> error ("Vertice non trovato: " ++ show v)
 
 comprimiGrafo :: [[Int]] -> [(Int, Int)] -> [(Int, Int)]
 comprimiGrafo sccs archi =
@@ -198,5 +159,3 @@ contaSCCZero v sccs archi =
       , i /= indiceSCC v sccs
       , gradoEntrante i archi == 0
       ]
-
-
