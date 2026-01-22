@@ -31,7 +31,7 @@ main :-
     write('           GRAFO COMPRESSO'), nl,
     stampa_riga,
     write('Inserisci il vertice di partenza (tra '),
-    write(Nodi), write('):'), nl,
+    write(Nodi), write('): '),
 
     leggi_numero(Nodo),
 
