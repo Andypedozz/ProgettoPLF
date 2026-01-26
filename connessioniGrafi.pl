@@ -1,16 +1,19 @@
-/* ##############################################################
-# Corso di Programmazione Logica e Funzionale                  #
-# Progetto per la sessione autunnale A.A. 2024/2025            #
-# Versione GNU Prolog                                         #
-############################################################## */
+% ##################################################################
+% #         Corso di Programmazione Logica e Funzionale            #
+% #        Progetto per la sessione invernale A.A 2025/2026        #
+% #                        di Andrea Pedini                        #
+% #                       Matricola: 322918                        #
+% #                       e Matteo Fraternali                      #
+% #                       Matricola: 316637                        #
+% ##################################################################
 
 /*
-Specifica : Scrivere un programma Prolog che legga un grafo orientato
-da file e calcoli le sue Componenti Fortemente Connesse (SCC)
-utilizzando l’algoritmo di Kosaraju.
-Successivamente il programma costruisce il grafo compresso
-e determina il numero di SCC con grado entrante zero,
-escludendo la SCC contenente un nodo scelto dall’utente.
+    Specifica : Scrivere un programma Prolog che legga un grafo orientato
+    da file e calcoli le sue Componenti Fortemente Connesse (SCC)
+    utilizzando l’algoritmo di Kosaraju.
+    Successivamente il programma costruisce il grafo compresso
+    e determina il numero di SCC con grado entrante zero,
+    escludendo la SCC contenente un nodo scelto dall’utente.
 */
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -79,8 +82,8 @@ stampa_riga :-
     write('--------------------------------------'), nl.
 
 /* Predicato che stampa le SCC numerate .
-- Il primo parametro la lista delle SCC
-- Il secondo parametro l’indice corrente */
+- Il primo parametro è la lista delle SCC
+- Il secondo parametro è l’indice corrente */
 stampa_scc_numerate([], _).
 stampa_scc_numerate([S|T], N) :-
     write('SCC '), write(N), write(': '),
@@ -101,9 +104,9 @@ leggi_linea(Stream, Line) :-
     atom_chars(Line, Chars).
 
 /* Predicato ausiliario per la lettura delle linee .
-- Il primo parametro lo stream
-- Il secondo parametro il carattere corrente
-- Il terzo parametro la lista dei caratteri letti */
+- Il primo parametro è lo stream
+- Il secondo parametro è il carattere corrente
+- Il terzo parametro è la lista dei caratteri letti */
 leggi_linea_aux(_, end_of_file, []) :- !.
 leggi_linea_aux(_, '\n', []) :- !.
 leggi_linea_aux(Stream, Char, [Char|Chars]) :-
@@ -111,16 +114,16 @@ leggi_linea_aux(Stream, Char, [Char|Chars]) :-
     leggi_linea_aux(Stream, NextChar, Chars).
 
 /* Predicato che legge un termine Prolog da file .
-- Il primo parametro lo stream
-- Il secondo parametro il termine letto */
+- Il primo parametro è lo stream
+- Il secondo parametro è il termine letto */
 leggi_termine(Stream, Termine) :-
     leggi_linea(Stream, Line),
     atom_concat(Line, '.', LineConPunto),
     read_from_atom(LineConPunto, Termine).
 
 /* Predicato che legge il grafo da file .
-- Il primo parametro il nome del file
-- Il secondo parametro il grafo letto */
+- Il primo parametro è il nome del file
+- Il secondo parametro è il grafo letto */
 leggi_grafo_da_file(File, grafo(Nodi, Archi)) :-
     open(File, read, Stream),
     leggi_termine(Stream, Nodi),
@@ -188,12 +191,12 @@ combina_testa(N, Lista, [N|Lista]).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 /* Predicato di visita in profondità generico .
-- Il primo parametro la strategia di combinazione
-- Il secondo parametro il grafo
-- Il terzo parametro il nodo corrente
-- Il quarto parametro i nodi visitati
-- Il quinto parametro i nodi visitati aggiornati
-- Il sesto parametro il risultato della visita */
+- Il primo parametro è la strategia di combinazione
+- Il secondo parametro è il grafo
+- Il terzo parametro è il nodo corrente
+- Il quarto parametro è i nodi visitati
+- Il quinto parametro è i nodi visitati aggiornati
+- Il sesto parametro è il risultato della visita */
 visitaInProfondita(_, _, N, V, V, []) :-
     membro(N, V), !.
 

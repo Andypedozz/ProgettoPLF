@@ -7,6 +7,15 @@
 -- #                       Matricola: 316637                        #
 -- ##################################################################
 
+{-
+    Specifica : Scrivere un programma Haskell che legga un grafo orientato
+    da file e calcoli le sue Componenti Fortemente Connesse (SCC)
+    utilizzando l’algoritmo di Kosaraju.
+    Successivamente il programma costruisce il grafo compresso
+    e determina il numero di SCC con grado entrante zero,
+    escludendo la SCC contenente un nodo scelto dall’utente.
+-}
+
 module Main where
 
 -- Caricamento della funzione per eliminare duplicati da una lista
