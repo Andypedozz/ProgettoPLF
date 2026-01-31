@@ -34,45 +34,95 @@ import Data.List ( nub )
 -}
 main :: IO ()
 main = do
-    contenuto <- readFile "input.txt"
-    let righe   = lines contenuto
-        vertici = read ( head righe ) :: [ Int ]
-        archi   = read ( righe !! 1 ) :: [ ( Int , Int ) ]
+    risultato <- leggiGrafoDaFile "input.txt"
 
-    putStrLn "\n======================================"
-    putStrLn "            GRAFO LETTO DA FILE       "
-    putStrLn "--------------------------------------"
-    putStrLn $ "Vertici: " ++ show vertici
-    putStrLn $ "Archi:   " ++ show archi
+    case risultato of
+        Nothing -> do
+            putStrLn "\nIl programma è stato terminato a causa di errori nel file di input.\n"
 
-    let componenti = kosaraju vertici archi
+        Just (vertici, archi) -> do
 
-    putStrLn "\n======================================"
-    putStrLn "       COMPONENTI FORTEMENTE CONNESSE "
-    putStrLn "--------------------------------------"
-    mapM_
-        ( \( i , c ) -> putStrLn $ "SCC " ++ show i ++ ": " ++ show c )
-        ( zip [0 ..] componenti )
+            putStrLn "\n======================================"
+            putStrLn "            GRAFO LETTO DA FILE       "
+            putStrLn "--------------------------------------"
+            putStrLn $ "Vertici: " ++ show vertici
+            putStrLn $ "Archi:   " ++ show archi
 
-    let grafoCompresso = comprimiGrafo componenti archi
+            let componenti = kosaraju vertici archi
 
-    putStrLn "\n======================================"
-    putStrLn "           GRAFO COMPRESSO             "
-    putStrLn "--------------------------------------"
-    mapM_
-        ( \( i , j ) -> putStrLn $ "SCC_" ++ show i ++ " -> SCC_" ++ show j )
-        grafoCompresso
+            putStrLn "\n======================================"
+            putStrLn "       COMPONENTI FORTEMENTE CONNESSE "
+            putStrLn "--------------------------------------"
+            mapM_
+                (\(i, c) -> putStrLn $ "SCC " ++ show i ++ ": " ++ show c)
+                (zip [0 ..] componenti)
 
-    verticePartenza <- acquisisciVertice vertici
+            let grafoCompresso = comprimiGrafo componenti archi
 
-    let numeroZero =
-            contaSCCConGradoZero verticePartenza componenti grafoCompresso
+            putStrLn "\n======================================"
+            putStrLn "           GRAFO COMPRESSO             "
+            putStrLn "--------------------------------------"
+            mapM_
+                (\(i, j) -> putStrLn $ "SCC_" ++ show i ++ " -> SCC_" ++ show j)
+                grafoCompresso
 
-    putStrLn "\n======================================"
-    putStrLn $
-        "Numero di SCC con grado entrante 0 (esclusa la partenza): "
-        ++ show numeroZero
-    putStrLn "======================================\n"
+            verticePartenza <- acquisisciVertice vertici
+
+            let numeroZero =
+                    contaSCCConGradoZero verticePartenza componenti grafoCompresso
+
+            putStrLn "\n======================================"
+            putStrLn $
+                "Numero di SCC con grado entrante 0 (esclusa la partenza): "
+                ++ show numeroZero
+            putStrLn "======================================\n"
+
+--------------------------------------------------
+-- LETTURA E VALIDAZIONE DEL GRAFO DA FILE
+--------------------------------------------------
+
+{- 
+    Legge e valida un grafo da file.
+    Restituisce:
+    - Just (vertici, archi) se il parsing e la validazione hanno successo
+    - Nothing in caso di errore
+-}
+leggiGrafoDaFile :: FilePath -> IO (Maybe ([Int], [(Int, Int)]))
+leggiGrafoDaFile nomeFile = do
+    contenuto <- readFile nomeFile
+    let righe = lines contenuto
+
+    -- Controllo numero di righe
+    if length righe < 2
+        then do
+            putStrLn "Errore: il file deve contenere almeno due righe."
+            return Nothing
+        else do
+            let rVertici = head righe
+                rArchi   = righe !! 1
+
+            -- Parsing sicuro delle liste
+            case (reads rVertici :: [([Int], String)],
+                  reads rArchi   :: [([(Int, Int)], String)]) of
+
+                ([(vertici, "")], [(archi, "")]) -> do
+
+                    -- Validazione lista vertici
+                    if null vertici
+                        then do
+                            putStrLn "Errore: la lista dei vertici è vuota."
+                            return Nothing
+                        else
+                            -- Validazione archi: vertici esistenti
+                            if all (\(x, y) -> x `elem` vertici && y `elem` vertici) archi
+                                then return (Just (vertici, archi))
+                                else do
+                                    putStrLn "Errore: alcuni archi contengono vertici non presenti nella lista."
+                                    return Nothing
+
+                _ -> do
+                    putStrLn "Errore: formato non valido delle liste (parentesi o virgole errate)."
+                    return Nothing
 
 --------------------------------------------------
 -- FUNZIONE DI ACQUISIZIONE DEL VERTICE
