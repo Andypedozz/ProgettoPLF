@@ -7,28 +7,46 @@
 % #                       Matricola: 316637                        #
 % ##################################################################
 
-/*
-    Specifica : Scrivere un programma Prolog che legga un grafo orientato
-    da file e calcoli le sue Componenti Fortemente Connesse (SCC)
-    utilizzando l’algoritmo di Kosaraju.
-    Successivamente il programma costruisce il grafo compresso
-    e determina il numero di SCC con grado entrante zero,
-    escludendo la SCC contenente un nodo scelto dall’utente.
-*/
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% MAIN
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-/* Predicato principale del programma .
-- Legge il grafo da file
-- Calcola le componenti fortemente connesse
-- Stampa i risultati ottenuti */
+/*
+    Predicato di avvio del programma.
+    Legge il grafo da file 'input.txt' e gestisce il risultato.
+    Non riceve parametri, il file di input è fisso.
+*/
 main :-
-    leggi_grafo_da_file('input.txt', G),
-    nodi(G, Nodi),
-    archi(G, Archi),
-    kosaraju(G, SCCs),
+    leggi_grafo_sicuro('input.txt', Risultato),
+    gestisci_risultato(Risultato).
+
+/*
+    Gestisce il risultato della lettura del file.
+    Parametri:
+    - Risultato: errore oppure ok(Grafo)
+    In caso di errore stampa messaggio e fallisce.
+    In caso di successo passa il grafo a esegui_programma.
+*/
+gestisci_risultato(errore) :-
+    nl, stampa_separatore,
+    write('Errore nel file di input.'), nl,
+    write('Controllare formato e contenuto del grafo.'), nl,
+    stampa_separatore, nl, !, fail.
+
+gestisci_risultato(ok(Grafo)) :-
+    esegui_programma(Grafo).
+
+/*
+    Predicato principale che coordina l'esecuzione del programma.
+    Parametri:
+    - Grafo: termine grafo(Nodi, Archi)
+    Calcola le SCC, stampa informazioni, chiede input utente
+    e calcola le SCC con grado entrante zero.
+*/
+esegui_programma(Grafo) :-
+    nodi(Grafo, Nodi),
+    archi(Grafo, Archi),
+    kosaraju(Grafo, SCCs),
 
     stampa_separatore,
     write('            GRAFO LETTO DA FILE       '), nl,
@@ -36,256 +54,442 @@ main :-
     write('Vertici: '), write(Nodi), nl,
     write('Archi:   '), write(Archi), nl,
 
-    nl,
-    stampa_separatore,
+    nl, stampa_separatore,
     write('       COMPONENTI FORTEMENTE CONNESSE '), nl,
     stampa_riga,
     stampa_scc_numerate(SCCs, 0),
 
-    nl,
-    stampa_separatore,
+    nl, stampa_separatore,
     write('           GRAFO COMPRESSO'), nl,
     stampa_riga,
-    write('Inserisci il vertice di partenza (tra '),
-    write(Nodi), write('):'), nl,
 
-    leggi_numero(Nodo),
+    leggi_vertice_valido(Nodi, NodoScelto),
+    scc_di_nodo(NodoScelto, SCCs, SCCPartenza),
 
-    scc_di_nodo(Nodo, SCCs, SCCpartenza),
+    findall(S, (membro(S, SCCs), S \= SCCPartenza,
+                grado_entrante(Grafo, SCCs, S, 0)), SCCZeroIn),
+    length(SCCZeroIn, Conteggio),
 
-    findall(
-        S,
-        ( membro(S,SCCs),
-          S \= SCCpartenza,
-          grado_entrante(G,SCCs,S,0)
-        ),
-        ZeroIn
-    ),
-    length(ZeroIn, Conteggio),
-
-    nl,
-    stampa_separatore,
+    nl, stampa_separatore,
     write('Numero di SCC con indegree 0 (esclusa partenza): '),
     write(Conteggio), nl,
     stampa_separatore.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% LETTURA E VALIDAZIONE DEL GRAFO
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+/*
+    Legge il grafo da file in modo sicuro.
+    Parametri:
+    - File: nome del file di input
+    - Risultato: ok(grafo(Nodi,Archi)) se successo, errore altrimenti
+    Valida formato e contenuto del grafo letto.
+*/
+leggi_grafo_sicuro(File, ok(grafo(Nodi, Archi))) :-
+    catch(open(File, read, Stream), _, fail),
+    leggi_termine_sicuro(Stream, Nodi),
+    is_list(Nodi), Nodi \= [], lista_nodi_valida(Nodi),
+    leggi_termine_sicuro(Stream, Archi),
+    is_list(Archi), lista_archi_valida(Archi),
+    close(Stream),
+    archi_validi(Archi, Nodi), !.
+
+leggi_grafo_sicuro(_, errore).
+
+/*
+    Legge un termine Prolog da stream intercettando eccezioni.
+    Parametri:
+    - Stream: stream di input aperto
+    - Termine: termine Prolog letto dalla riga
+*/
+leggi_termine_sicuro(Stream, Termine) :-
+    leggi_linea(Stream, Line),
+    atom_concat(Line, '.', LineConPunto),
+    catch(read_from_atom(LineConPunto, Termine), _, fail).
+
+/*
+    Verifica che una lista contenga solo interi.
+    Parametri:
+    - Lista: lista da validare come lista di nodi
+*/
+lista_nodi_valida([]).
+lista_nodi_valida([H|T]) :- integer(H), lista_nodi_valida(T).
+
+/*
+    Verifica che una lista contenga solo coppie (X,Y) di interi.
+    Parametri:
+    - Lista: lista da validare come lista di archi
+*/
+lista_archi_valida([]).
+lista_archi_valida([(X,Y)|T]) :- integer(X), integer(Y), lista_archi_valida(T).
+
+/*
+    Verifica che tutti gli archi usino nodi esistenti.
+    Parametri:
+    - Archi: lista di archi (X,Y)
+    - Nodi: lista di nodi validi
+*/
+archi_validi([], _).
+archi_validi([(X,Y)|Resto], Nodi) :-
+    membro(X, Nodi), membro(Y, Nodi), archi_validi(Resto, Nodi).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% LETTURA DA STREAM
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+/*
+    Legge una riga da uno stream.
+    Parametri:
+    - Stream: stream di input
+    - Linea: atomo contenente il testo della riga
+*/
+leggi_linea(Stream, Linea) :-
+    get_char(Stream, Char),
+    leggi_linea_aux(Stream, Char, Caratteri),
+    atom_chars(Linea, Caratteri).
+
+/*
+    Predicato ausiliario per leggere carattere per carattere.
+    Parametri:
+    - Stream: stream di input
+    - Char: carattere corrente
+    - Caratteri: lista dei caratteri accumulati
+*/
+leggi_linea_aux(_, end_of_file, []) :- !.
+leggi_linea_aux(_, '\n', []) :- !.
+leggi_linea_aux(Stream, Char, [Char|Resto]) :-
+    get_char(Stream, Next),
+    leggi_linea_aux(Stream, Next, Resto).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% INPUT UTENTE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+/*
+    Richiede all'utente un nodo valido.
+    Parametri:
+    - Nodi: lista dei nodi validi del grafo
+    - Nodo: nodo scelto dall'utente (validato)
+    Garantisce che l'input sia esattamente un numero intero
+    e che appartenga alla lista dei nodi del grafo.
+*/
+leggi_vertice_valido(Nodi, Nodo) :-
+    write('Inserisci il vertice di partenza (tra '),
+    write(Nodi), write('):'), nl,
+    leggi_numero_valido(N),
+    (membro(N, Nodi) -> Nodo = N
+    ; write('Vertice non valido! Riprova.'), nl,
+      leggi_vertice_valido(Nodi, Nodo)).
+
+/*
+    Legge un numero intero valido da input standard.
+    Parametri:
+    - N: numero intero letto e validato
+    Gestisce input non validi come stringhe, numeri con spazi,
+    o altri caratteri non numerici.
+*/
+leggi_numero_valido(N) :-
+    leggi_linea(user_input, Line),
+    (leggi_e_valida_numero(Line, N) -> true
+    ; write('Input non valido! Inserisci un numero intero.'), nl,
+      leggi_numero_valido(N)).
+
+/*
+    Legge e valida che una stringa rappresenti esattamente un numero intero.
+    Parametri:
+    - Line: atomo contenente l'input
+    - N: numero intero validato
+    Utilizza read_from_atom per parsing sicuro e verifica che non ci siano
+    termini aggiuntivi dopo il numero.
+*/
+leggi_e_valida_numero(Line, N) :-
+    atom_concat(Line, '.', LineConPunto),
+    catch(read_from_atom(LineConPunto, Termine), _, fail),
+    numero_valido(Termine, N).
+
+/*
+    Verifica che un termine rappresenti un numero intero valido.
+    Parametri:
+    - Termine: termine letto dall'input
+    - N: numero intero validato
+    Controlla che il termine sia un intero e che non contenga
+    strutture complesse o altri elementi.
+*/
+numero_valido(N, N) :- integer(N).
+numero_valido(Termine, _) :- 
+    \+ integer(Termine), 
+    write('Errore: "'), write(Termine), write('" non è un numero intero.'), nl,
+    fail.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% STAMPA
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-/* Predicato che stampa una linea separatrice */
-stampa_separatore :-
-    write('======================================'), nl.
+/*
+    Stampa una linea di separazione grafica.
+*/
+stampa_separatore :- write('======================================'), nl.
 
-/* Predicato che stampa una riga separatrice */
-stampa_riga :-
-    write('--------------------------------------'), nl.
+/*
+    Stampa una riga separatrice più corta.
+*/
+stampa_riga :- write('--------------------------------------'), nl.
 
-/* Predicato che stampa le SCC numerate .
-- Il primo parametro è la lista delle SCC
-- Il secondo parametro è l’indice corrente */
+/*
+    Stampa tutte le SCC numerandole.
+    Parametri:
+    - Lista delle SCC da stampare
+    - Indice: numero progressivo per la numerazione
+*/
 stampa_scc_numerate([], _).
-stampa_scc_numerate([S|T], N) :-
-    write('SCC '), write(N), write(': '),
-    write(S), nl,
-    N1 is N + 1,
-    stampa_scc_numerate(T, N1).
+stampa_scc_numerate([S|Resto], Indice) :-
+    write('SCC '), write(Indice), write(': '), write(S), nl,
+    Next is Indice + 1,
+    stampa_scc_numerate(Resto, Next).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% LETTURA GRAFO DA FILE
+%% PREDICATI DI BASE SUL GRAFO
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-/* Predicato che legge una linea da uno stream .
-- Il primo parametro lo stream di input
-- Il secondo parametro la linea letta */
-leggi_linea(Stream, Line) :-
-    get_char(Stream, Char),
-    leggi_linea_aux(Stream, Char, Chars),
-    atom_chars(Line, Chars).
+/*
+    Verifica l'appartenenza di un elemento a una lista.
+    Parametri:
+    - X: elemento da cercare
+    - Lista: lista in cui cercare
+*/
+membro(X, [X|_]).
+membro(X, [_|Resto]) :- membro(X, Resto).
 
-/* Predicato ausiliario per la lettura delle linee .
-- Il primo parametro è lo stream
-- Il secondo parametro è il carattere corrente
-- Il terzo parametro è la lista dei caratteri letti */
-leggi_linea_aux(_, end_of_file, []) :- !.
-leggi_linea_aux(_, '\n', []) :- !.
-leggi_linea_aux(Stream, Char, [Char|Chars]) :-
-    get_char(Stream, NextChar),
-    leggi_linea_aux(Stream, NextChar, Chars).
-
-/* Predicato che legge un termine Prolog da file .
-- Il primo parametro è lo stream
-- Il secondo parametro è il termine letto */
-leggi_termine(Stream, Termine) :-
-    leggi_linea(Stream, Line),
-    atom_concat(Line, '.', LineConPunto),
-    read_from_atom(LineConPunto, Termine).
-
-/* Predicato che legge il grafo da file .
-- Il primo parametro è il nome del file
-- Il secondo parametro è il grafo letto */
-leggi_grafo_da_file(File, grafo(Nodi, Archi)) :-
-    open(File, read, Stream),
-    leggi_termine(Stream, Nodi),
-    leggi_termine(Stream, Archi),
-    close(Stream).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% INPUT NUMERICO
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-/* Predicato che legge un numero da input standard .
-- Il parametro il numero letto */
-leggi_numero(N) :-
-    leggi_linea(user_input, Line),
-    atom_codes(Line, Codes),
-    number_codes(N, Codes).
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% PREDICATI BASE
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-/* Predicato che verifica l’appartenenza di un elemento a una lista .
-- Il primo parametro l’elemento
-- Il secondo parametro la lista */
-membro(X,[X|_]).
-membro(X,[_|T]) :- membro(X,T).
-
-/* Predicato che restituisce i nodi del grafo .
-- Il primo parametro il grafo
-- Il secondo parametro la lista dei nodi */
+/*
+    Estrae la lista dei nodi dal grafo.
+    Parametri:
+    - Grafo: termine grafo(Nodi, Archi)
+    - Nodi: lista dei vertici
+*/
 nodi(grafo(N,_), N).
 
-/* Predicato che restituisce gli archi del grafo .
-- Il primo parametro il grafo
-- Il secondo parametro la lista degli archi */
+/*
+    Estrae la lista degli archi dal grafo.
+    Parametri:
+    - Grafo: termine grafo(Nodi, Archi)
+    - Archi: lista delle coppie (X,Y)
+*/
 archi(grafo(_,A), A).
 
-/* Predicato che verifica l’adiacenza tra due nodi .
-- Il primo parametro il grafo
-- Il secondo parametro il nodo sorgente
-- Il terzo parametro il nodo destinazione */
+/*
+    Verifica se esiste un arco orientato tra due nodi.
+    Parametri:
+    - Grafo: grafo di riferimento
+    - X: nodo sorgente
+    - Y: nodo destinazione
+*/
 adiacente(grafo(_,A), X, Y) :- membro((X,Y), A).
 
-/* Predicato che restituisce i nodi adiacenti a un nodo .
-- Il primo parametro il grafo
-- Il secondo parametro il nodo
-- Il terzo parametro la lista dei nodi adiacenti */
-adiacenti(G, X, L) :- findall(Y, adiacente(G,X,Y), L).
+/*
+    Restituisce tutti i nodi raggiungibili da un nodo.
+    Parametri:
+    - Grafo: grafo di riferimento
+    - Nodo: nodo di partenza
+    - Adiacenti: lista dei nodi raggiungibili con un arco
+*/
+adiacenti(Grafo, Nodo, Adiacenti) :-
+    findall(Y, adiacente(Grafo, Nodo, Y), Adiacenti).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% STRATEGIE DI COMBINAZIONE PER LA VISITA IN PROFONDITA'
+%% VISITA IN PROFONDITÀ
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-/* Predicato che inserisce un nodo in coda alla lista .
-Usato per l’ordine di completamento */
-combina_fine(N, Lista, Risultato) :-
-    append(Lista, [N], Risultato).
+/*
+    Implementazione generica della visita in profondità.
+    Parametri:
+    - Combina: predicato che definisce come accumulare risultato
+    - Grafo: grafo su cui eseguire la visita
+    - Nodo: nodo corrente
+    - Visitati: lista nodi già visitati
+    - VisitatiFinali: lista nodi visitati al termine
+    - Risultato: risultato prodotto dalla visita
+*/
+visitaInProfondita(_, _, Nodo, Visitati, Visitati, []) :-
+    membro(Nodo, Visitati), !.
 
-/* Predicato che inserisce un nodo in testa alla lista .
-Usato per la costruzione delle SCC */
-combina_testa(N, Lista, [N|Lista]).
+visitaInProfondita(Combina, Grafo, Nodo, Visitati, VisitatiFinali, Risultato) :-
+    \+ membro(Nodo, Visitati),
+    adiacenti(Grafo, Nodo, Vicini),
+    visitaInProfondita_lista(Combina, Grafo, Vicini,
+                            [Nodo|Visitati], VisitatiParziali, RisultatiFigli),
+    call(Combina, Nodo, RisultatiFigli, Risultato),
+    VisitatiFinali = VisitatiParziali.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% VISITA IN PROFONDITA' GENERICA
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-/* Predicato di visita in profondità generico .
-- Il primo parametro è la strategia di combinazione
-- Il secondo parametro è il grafo
-- Il terzo parametro è il nodo corrente
-- Il quarto parametro è i nodi visitati
-- Il quinto parametro è i nodi visitati aggiornati
-- Il sesto parametro è il risultato della visita */
-visitaInProfondita(_, _, N, V, V, []) :-
-    membro(N, V), !.
-
-visitaInProfondita(Combina, G, N, V, V2, Risultato) :-
-    \+ membro(N, V),
-    adiacenti(G, N, Vicini),
-    visitaInProfondita_lista(Combina, G, Vicini, [N|V], V1, RisFigli),
-    call(Combina, N, RisFigli, Risultato),
-    V2 = V1.
-
-/* Predicato ausiliario per visitare una lista di nodi .
-- Parametri analoghi alla visita in profondità principale */
-visitaInProfondita_lista(_, _, [], V, V, []).
-visitaInProfondita_lista(Combina, G, [H|T], V, V2, Risultato) :-
-    visitaInProfondita(Combina, G, H, V, V1, R1),
-    visitaInProfondita_lista(Combina, G, T, V1, V2, R2),
+/*
+    Versione della visita che opera su lista di nodi.
+    Parametri:
+    - Combina: strategia di accumulo
+    - Grafo: grafo di riferimento
+    - Lista: nodi da visitare
+    - Visitati: nodi già visitati
+    - VisitatiFinali: nodi visitati al termine
+    - Risultato: risultato complessivo
+*/
+visitaInProfondita_lista(_, _, [], Visitati, Visitati, []).
+visitaInProfondita_lista(Combina, Grafo, [H|T], Visitati, VisitatiFinali, Risultato) :-
+    visitaInProfondita(Combina, Grafo, H, Visitati, Visitati1, R1),
+    visitaInProfondita_lista(Combina, Grafo, T, Visitati1, VisitatiFinali, R2),
     append(R1, R2, Risultato).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% VISITA IN PROFONDITA' SPECIALIZZATE
+%% VISITE SPECIALIZZATE
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-/* Visita in profondità per il calcolo dell’ordine di completamento */
-visitaInProfondita_ordine(G, N, V, V2, Ordine) :-
-    visitaInProfondita(combina_fine, G, N, V, V2, Ordine).
+/*
+    Calcola l'ordine di completamento dei nodi.
+    Parametri:
+    - Grafo: grafo di riferimento
+    - Nodo: nodo di partenza
+    - Visitati: nodi già visitati
+    - VisitatiFinali: nodi visitati al termine
+    - Ordine: lista nodi in ordine di completamento
+*/
+visitaInProfondita_ordine(Grafo, Nodo, Visitati, VisitatiFinali, Ordine) :-
+    visitaInProfondita(combina_fine, Grafo, Nodo, Visitati, VisitatiFinali, Ordine).
 
-/* Visita in profondità per la costruzione di una componente fortemente connessa */
-visitaInProfondita_scc(G, N, V, V2, Comp) :-
-    visitaInProfondita(combina_testa, G, N, V, V2, Comp).
+/*
+    Costruisce una singola SCC.
+    Parametri:
+    - Grafo: grafo di riferimento
+    - Nodo: nodo di partenza
+    - Visitati: nodi già visitati
+    - VisitatiFinali: nodi visitati al termine
+    - Componente: SCC costruita
+*/
+visitaInProfondita_scc(Grafo, Nodo, Visitati, VisitatiFinali, Componente) :-
+    visitaInProfondita(combina_testa, Grafo, Nodo, Visitati, VisitatiFinali, Componente).
+
+/*
+    Calcola ordine di completamento per tutti i nodi.
+    Parametri:
+    - Grafo: grafo di riferimento
+    - Ordine: lista nodi in ordine di completamento
+*/
+visitaInProfondita_grafo(Grafo, Ordine) :-
+    nodi(Grafo, Nodi),
+    visitaInProfondita_lista(combina_fine, Grafo, Nodi, [], _, Ordine).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% VISITA IN PROFONDITA' ORDINE DI COMPLETAMENTO (GLOBALE)
+%% STRATEGIE DI COMBINAZIONE
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-/* Predicato che calcola l’ordine di completamento globale del grafo */
-visitaInProfondita_grafo(G, Ordine) :-
-    nodi(G, Nodi),
-    visitaInProfondita_lista(combina_fine, G, Nodi, [], _, Ordine).
+/*
+    Inserisce nodo in coda alla lista.
+    Parametri:
+    - N: nodo da inserire
+    - Lista: lista corrente
+    - Risultato: lista risultante
+*/
+combina_fine(N, Lista, Risultato) :- append(Lista, [N], Risultato).
+
+/*
+    Inserisce nodo in testa alla lista.
+    Parametri:
+    - N: nodo da inserire
+    - Lista: lista corrente
+    - Risultato: lista risultante
+*/
+combina_testa(N, Lista, [N|Lista]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% GRAFO TRASPOSTO
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-/* Predicato che costruisce il grafo trasposto */
-trasposto(grafo(N,A), grafo(N,AT)) :-
-    trasponi_archi(A, AT).
+/*
+    Costruisce il grafo trasposto.
+    Parametri:
+    - Grafo originale
+    - GrafoTrasposto: grafo con archi invertiti
+*/
+trasposto(grafo(Nodi, Archi), grafo(Nodi, ArchiTrasposti)) :-
+    trasponi_archi(Archi, ArchiTrasposti).
 
-/* Predicato che inverte tutti gli archi del grafo */
+/*
+    Inverte la direzione di tutti gli archi.
+    Parametri:
+    - Archi: lista archi originali
+    - ArchiTrasposti: lista archi invertiti
+*/
 trasponi_archi([], []).
-trasponi_archi([(X,Y)|T], [(Y,X)|R]) :-
-    trasponi_archi(T,R).
+trasponi_archi([(X,Y)|Resto], [(Y,X)|Trasposti]) :-
+    trasponi_archi(Resto, Trasposti).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% KOSARAJU
+%% ALGORITMO DI KOSARAJU
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-/* Predicato che implementa l’algoritmo di Kosaraju */
-kosaraju(G, SCCs) :-
-    visitaInProfondita_grafo(G, Ordine),
-    reverse(Ordine, OrdInv),
-    trasposto(G, GT),
-    kosaraju_visita(GT, OrdInv, [], SCCs).
+/*
+    Implementazione algoritmo di Kosaraju.
+    Parametri:
+    - Grafo: grafo originale
+    - SCCs: lista delle componenti fortemente connesse
+*/
+kosaraju(Grafo, SCCs) :-
+    visitaInProfondita_grafo(Grafo, Ordine),
+    reverse(Ordine, OrdineInverso),
+    trasposto(Grafo, GrafoTrasposto),
+    kosaraju_visita(GrafoTrasposto, OrdineInverso, [], SCCs).
 
-/* Predicato ausiliario di visita per Kosaraju */
+/*
+    Visita ausiliaria che costruisce progressivamente le SCC.
+    Parametri:
+    - Grafo: grafo trasposto
+    - Ordine: lista nodi in ordine di visita
+    - Visitati: nodi già visitati
+    - SCCs: lista delle SCC costruite
+*/
 kosaraju_visita(_, [], _, []).
-kosaraju_visita(G, [N|T], V, SCCs) :-
-    membro(N, V), !,
-    kosaraju_visita(G, T, V, SCCs).
-kosaraju_visita(G, [N|T], V, [SCC|R]) :-
-    visitaInProfondita_scc(G, N, V, V1, SCC),
-    kosaraju_visita(G, T, V1, R).
+kosaraju_visita(Grafo, [Nodo|Resto], Visitati, SCCs) :-
+    membro(Nodo, Visitati), !,
+    kosaraju_visita(Grafo, Resto, Visitati, SCCs).
+
+kosaraju_visita(Grafo, [Nodo|Resto], Visitati, [SCC|Altre]) :-
+    visitaInProfondita_scc(Grafo, Nodo, Visitati, Visitati1, SCC),
+    kosaraju_visita(Grafo, Resto, Visitati1, Altre).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% GRAFO DELLE SCC
+%% GRAFO COMPRESSO DELLE SCC
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-/* Predicato che individua la SCC di un nodo */
-scc_di_nodo(N, [S|_], S) :- membro(N,S), !.
-scc_di_nodo(N, [_|T], S) :- scc_di_nodo(N,T,S).
+/*
+    Trova la SCC che contiene un nodo.
+    Parametri:
+    - Nodo: nodo da cercare
+    - SCCs: lista delle SCC
+    - SCC: SCC che contiene il nodo
+*/
+scc_di_nodo(Nodo, [S|_], S) :- membro(Nodo, S), !.
+scc_di_nodo(Nodo, [_|Resto], S) :- scc_di_nodo(Nodo, Resto, S).
 
-/* Predicato che verifica l’esistenza di un arco tra SCC */
-arco_scc(G, SCCs, S1, S2) :-
-    archi(G,A),
-    membro((X,Y),A),
-    scc_di_nodo(X,SCCs,S1),
-    scc_di_nodo(Y,SCCs,S2),
+/*
+    Verifica se esiste arco tra due SCC diverse.
+    Parametri:
+    - Grafo: grafo originale
+    - SCCs: lista delle SCC
+    - S1: SCC sorgente
+    - S2: SCC destinazione
+*/
+arco_scc(Grafo, SCCs, S1, S2) :-
+    archi(Grafo, Archi),
+    membro((X,Y), Archi),
+    scc_di_nodo(X, SCCs, S1),
+    scc_di_nodo(Y, SCCs, S2),
     S1 \= S2.
 
-/* Predicato che calcola il grado entrante di una SCC */
-grado_entrante(G, SCCs, S, Grado) :-
-    findall(1, arco_scc(G,SCCs,_,S), L),
-    length(L, Grado).
+/*
+    Calcola il grado entrante di una SCC.
+    Parametri:
+    - Grafo: grafo originale
+    - SCCs: lista delle SCC
+    - SCC: SCC di cui calcolare grado
+    - Grado: numero archi entranti
+*/
+grado_entrante(Grafo, SCCs, SCC, Grado) :-
+    findall(1, arco_scc(Grafo, SCCs, _, SCC), Lista),
+    length(Lista, Grado).

@@ -87,42 +87,41 @@ main = do
     - Just (vertici, archi) se il parsing e la validazione hanno successo
     - Nothing in caso di errore
 -}
+
 leggiGrafoDaFile :: FilePath -> IO (Maybe ([Int], [(Int, Int)]))
 leggiGrafoDaFile nomeFile = do
     contenuto <- readFile nomeFile
-    let righe = lines contenuto
+    case lines contenuto of
+        vLine:aLine:_ -> parseGrafo vLine aLine
+        _ -> errore "Errore: il file deve contenere almeno due righe."
 
-    -- Controllo numero di righe
-    if length righe < 2
-        then do
-            putStrLn "Errore: il file deve contenere almeno due righe."
-            return Nothing
-        else do
-            let rVertici = head righe
-                rArchi   = righe !! 1
+-- Parsing delle due righe
+parseGrafo :: String -> String -> IO (Maybe ([Int], [(Int, Int)]))
+parseGrafo rVertici rArchi =
+    case (reads rVertici, reads rArchi) of
+        ([(vertici, "")], [(archi, "")]) ->
+            validaGrafo vertici archi
+        _ ->
+            errore "Errore: formato non valido delle liste (parentesi o virgole errate)."
 
-            -- Parsing sicuro delle liste
-            case (reads rVertici :: [([Int], String)],
-                  reads rArchi   :: [([(Int, Int)], String)]) of
+-- Validazione semantica
+validaGrafo :: [Int] -> [(Int, Int)] -> IO (Maybe ([Int], [(Int, Int)]))
+validaGrafo vertici archi
+    | null vertici =
+        errore "Errore: la lista dei vertici è vuota."
+    | not (archiValidi vertici archi) =
+        errore "Errore: alcuni archi contengono vertici non presenti nella lista."
+    | otherwise =
+        return (Just (vertici, archi))
 
-                ([(vertici, "")], [(archi, "")]) -> do
+-- Controllo archi
+archiValidi :: [Int] -> [(Int, Int)] -> Bool
+archiValidi vertici =
+    all (\(x, y) -> x `elem` vertici && y `elem` vertici)
 
-                    -- Validazione lista vertici
-                    if null vertici
-                        then do
-                            putStrLn "Errore: la lista dei vertici è vuota."
-                            return Nothing
-                        else
-                            -- Validazione archi: vertici esistenti
-                            if all (\(x, y) -> x `elem` vertici && y `elem` vertici) archi
-                                then return (Just (vertici, archi))
-                                else do
-                                    putStrLn "Errore: alcuni archi contengono vertici non presenti nella lista."
-                                    return Nothing
-
-                _ -> do
-                    putStrLn "Errore: formato non valido delle liste (parentesi o virgole errate)."
-                    return Nothing
+-- Utility per errori
+errore :: String -> IO (Maybe a)
+errore msg = putStrLn msg >> return Nothing
 
 --------------------------------------------------
 -- FUNZIONE DI ACQUISIZIONE DEL VERTICE
