@@ -10,10 +10,10 @@
 {-
     Specifica : Scrivere un programma Haskell che legga un grafo orientato
     da file e calcoli le sue Componenti Fortemente Connesse (SCC)
-    utilizzando l’algoritmo di Kosaraju.
+    utilizzando l'algoritmo di Kosaraju.
     Successivamente il programma costruisce il grafo compresso
     e determina il numero di SCC con grado entrante zero,
-    escludendo la SCC contenente un nodo scelto dall’utente.
+    escludendo la SCC contenente un vertice scelto dall'utente.
 -}
 
 module Main where
@@ -129,7 +129,7 @@ errore msg = putStrLn msg >> return Nothing
 
 {- 
     Funzione che acquisisce da tastiera un vertice valido.
-    - l’argomento è la lista dei vertici del grafo
+    - l'argomento è la lista dei vertici del grafo
 -}
 acquisisciVertice :: [Int] -> IO Int
 acquisisciVertice vertici = do
@@ -156,7 +156,7 @@ verticiAdiacenti v archi = [ y | ( x , y ) <- archi , x == v ]
 
 {- 
     Funzione che inverte la direzione di tutti gli archi del grafo.
-    - l’argomento è la lista degli archi
+    - l'argomento è la lista degli archi
 -}
 invertiArchi :: [(Int, Int)] -> [(Int, Int)]
 invertiArchi [] = []
@@ -185,7 +185,7 @@ aggiungiInTesta v res = v : res
 --------------------------------------------------
 
 {- 
-    Visita in profondità' generica parametrizzata da una funzione di combinazione.
+    Visita in profondità generica parametrizzata da una funzione di combinazione.
     - il primo argomento decide come aggiungere il vertice corrente
     - il secondo argomento è il vertice di partenza
     - il terzo argomento è la lista degli archi
@@ -213,7 +213,7 @@ visitaInProfondita combina v archi visitati
 --------------------------------------------------
 
 {- 
-    Visita in profondità che calcola l’ordine di fine dei vertici.
+    Visita in profondità che calcola l'ordine di fine dei vertici.
 -}
 visitaInProfonditaOrdineFine :: Int -> [(Int, Int)] -> [Int] -> ([Int], [Int])
 visitaInProfonditaOrdineFine = visitaInProfondita aggiungiInCoda
@@ -229,7 +229,7 @@ visitaInProfonditaComponente = visitaInProfondita aggiungiInTesta
 --------------------------------------------------
 
 {- 
-    Funzione che calcola l’ordine di fine globale del grafo.
+    Funzione che calcola l'ordine di fine globale del grafo.
     - il primo argomento è la lista dei vertici
     - il secondo argomento è la lista degli archi
 -}
@@ -248,7 +248,7 @@ ordineDiFine vertici archi =
 
 {- 
     Funzione che calcola tutte le componenti fortemente connesse del grafo
-    utilizzando l’algoritmo di Kosaraju.
+    utilizzando l'algoritmo di Kosaraju.
     - il primo argomento è la lista dei vertici
     - il secondo argomento è la lista degli archi
 -}
@@ -273,7 +273,7 @@ kosaraju vertici archi =
 --------------------------------------------------
 
 {- 
-    Funzione che restituisce l’indice della SCC contenente un vertice.
+    Funzione che restituisce l'indice della SCC contenente un vertice.
     - il primo argomento è il vertice
     - il secondo argomento è la lista delle SCC
 -}
@@ -300,7 +300,7 @@ comprimiGrafo sccs archi =
 
 {- 
     Funzione che calcola il grado entrante di una SCC.
-    - il primo argomento è l’indice della SCC
+    - il primo argomento è l'indice della SCC
     - il secondo argomento è la lista degli archi del grafo compresso
 -}
 gradoEntrante :: Int -> [(Int, Int)] -> Int

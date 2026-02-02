@@ -39,19 +39,19 @@ gestisci_risultato(ok(Grafo)) :-
 /*
     Predicato principale che coordina l'esecuzione del programma.
     Parametri:
-    - Grafo: termine grafo(Nodi, Archi)
+    - Grafo: termine grafo(Vertici, Archi)
     Calcola le SCC, stampa informazioni, chiede input utente
     e calcola le SCC con grado entrante zero.
 */
 esegui_programma(Grafo) :-
-    nodi(Grafo, Nodi),
+    vertici(Grafo, Vertici),
     archi(Grafo, Archi),
     kosaraju(Grafo, SCCs),
 
     stampa_separatore,
     write('            GRAFO LETTO DA FILE       '), nl,
     stampa_riga,
-    write('Vertici: '), write(Nodi), nl,
+    write('Vertici: '), write(Vertici), nl,
     write('Archi:   '), write(Archi), nl,
 
     nl, stampa_separatore,
@@ -63,8 +63,8 @@ esegui_programma(Grafo) :-
     write('           GRAFO COMPRESSO'), nl,
     stampa_riga,
 
-    leggi_vertice_valido(Nodi, NodoScelto),
-    scc_di_nodo(NodoScelto, SCCs, SCCPartenza),
+    leggi_vertice_valido(Vertici, VerticeScelto),
+    scc_di_vertice(VerticeScelto, SCCs, SCCPartenza),
 
     findall(S, (membro(S, SCCs), S \= SCCPartenza,
                 grado_entrante(Grafo, SCCs, S, 0)), SCCZeroIn),
@@ -83,17 +83,17 @@ esegui_programma(Grafo) :-
     Legge il grafo da file in modo sicuro.
     Parametri:
     - File: nome del file di input
-    - Risultato: ok(grafo(Nodi,Archi)) se successo, errore altrimenti
+    - Risultato: ok(grafo(Vertici,Archi)) se successo, errore altrimenti
     Valida formato e contenuto del grafo letto.
 */
-leggi_grafo_sicuro(File, ok(grafo(Nodi, Archi))) :-
+leggi_grafo_sicuro(File, ok(grafo(Vertici, Archi))) :-
     catch(open(File, read, Stream), _, fail),
-    leggi_termine_sicuro(Stream, Nodi),
-    is_list(Nodi), Nodi \= [], lista_nodi_valida(Nodi),
+    leggi_termine_sicuro(Stream, Vertici),
+    is_list(Vertici), Vertici \= [], lista_vertici_valida(Vertici),
     leggi_termine_sicuro(Stream, Archi),
     is_list(Archi), lista_archi_valida(Archi),
     close(Stream),
-    archi_validi(Archi, Nodi), !.
+    archi_validi(Archi, Vertici), !.
 
 leggi_grafo_sicuro(_, errore).
 
@@ -111,10 +111,10 @@ leggi_termine_sicuro(Stream, Termine) :-
 /*
     Verifica che una lista contenga solo interi.
     Parametri:
-    - Lista: lista da validare come lista di nodi
+    - Lista: lista da validare come lista di vertici
 */
-lista_nodi_valida([]).
-lista_nodi_valida([H|T]) :- integer(H), lista_nodi_valida(T).
+lista_vertici_valida([]).
+lista_vertici_valida([H|T]) :- integer(H), lista_vertici_valida(T).
 
 /*
     Verifica che una lista contenga solo coppie (X,Y) di interi.
@@ -125,14 +125,14 @@ lista_archi_valida([]).
 lista_archi_valida([(X,Y)|T]) :- integer(X), integer(Y), lista_archi_valida(T).
 
 /*
-    Verifica che tutti gli archi usino nodi esistenti.
+    Verifica che tutti gli archi usino vertici esistenti.
     Parametri:
     - Archi: lista di archi (X,Y)
-    - Nodi: lista di nodi validi
+    - Vertici: lista di vertici validi
 */
 archi_validi([], _).
-archi_validi([(X,Y)|Resto], Nodi) :-
-    membro(X, Nodi), membro(Y, Nodi), archi_validi(Resto, Nodi).
+archi_validi([(X,Y)|Resto], Vertici) :-
+    membro(X, Vertici), membro(Y, Vertici), archi_validi(Resto, Vertici).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% LETTURA DA STREAM
@@ -167,20 +167,20 @@ leggi_linea_aux(Stream, Char, [Char|Resto]) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 /*
-    Richiede all'utente un nodo valido.
+    Richiede all'utente un vertice valido.
     Parametri:
-    - Nodi: lista dei nodi validi del grafo
-    - Nodo: nodo scelto dall'utente (validato)
+    - Vertici: lista dei vertici validi del grafo
+    - Vertice: vertice scelto dall'utente (validato)
     Garantisce che l'input sia esattamente un numero intero
-    e che appartenga alla lista dei nodi del grafo.
+    e che appartenga alla lista dei vertici del grafo.
 */
-leggi_vertice_valido(Nodi, Nodo) :-
+leggi_vertice_valido(Vertici, Vertice) :-
     write('Inserisci il vertice di partenza (tra '),
-    write(Nodi), write('):'), nl,
+    write(Vertici), write('):'), nl,
     leggi_numero_valido(N),
-    (membro(N, Nodi) -> Nodo = N
+    (membro(N, Vertici) -> Vertice = N
     ; write('Vertice non valido! Riprova.'), nl,
-      leggi_vertice_valido(Nodi, Nodo)).
+      leggi_vertice_valido(Vertici, Vertice)).
 
 /*
     Legge un numero intero valido da input standard.
@@ -262,39 +262,39 @@ membro(X, [X|_]).
 membro(X, [_|Resto]) :- membro(X, Resto).
 
 /*
-    Estrae la lista dei nodi dal grafo.
+    Estrae la lista dei vertici dal grafo.
     Parametri:
-    - Grafo: termine grafo(Nodi, Archi)
-    - Nodi: lista dei vertici
+    - Grafo: termine grafo(Vertici, Archi)
+    - Vertici: lista dei vertici
 */
-nodi(grafo(N,_), N).
+vertici(grafo(N,_), N).
 
 /*
     Estrae la lista degli archi dal grafo.
     Parametri:
-    - Grafo: termine grafo(Nodi, Archi)
+    - Grafo: termine grafo(Vertici, Archi)
     - Archi: lista delle coppie (X,Y)
 */
 archi(grafo(_,A), A).
 
 /*
-    Verifica se esiste un arco orientato tra due nodi.
+    Verifica se esiste un arco orientato tra due vertici.
     Parametri:
     - Grafo: grafo di riferimento
-    - X: nodo sorgente
-    - Y: nodo destinazione
+    - X: vertice sorgente
+    - Y: vertice destinazione
 */
 adiacente(grafo(_,A), X, Y) :- membro((X,Y), A).
 
 /*
-    Restituisce tutti i nodi raggiungibili da un nodo.
+    Restituisce tutti i vertici raggiungibili da un vertice.
     Parametri:
     - Grafo: grafo di riferimento
-    - Nodo: nodo di partenza
-    - Adiacenti: lista dei nodi raggiungibili con un arco
+    - Vertice: vertice di partenza
+    - Adiacenti: lista dei vertici raggiungibili con un arco
 */
-adiacenti(Grafo, Nodo, Adiacenti) :-
-    findall(Y, adiacente(Grafo, Nodo, Y), Adiacenti).
+adiacenti(Grafo, Vertice, Adiacenti) :-
+    findall(Y, adiacente(Grafo, Vertice, Y), Adiacenti).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% VISITA IN PROFONDITÀ
@@ -305,30 +305,30 @@ adiacenti(Grafo, Nodo, Adiacenti) :-
     Parametri:
     - Combina: predicato che definisce come accumulare risultato
     - Grafo: grafo su cui eseguire la visita
-    - Nodo: nodo corrente
-    - Visitati: lista nodi già visitati
-    - VisitatiFinali: lista nodi visitati al termine
+    - Vertice: vertice corrente
+    - Visitati: lista vertici già visitati
+    - VisitatiFinali: lista vertici visitati al termine
     - Risultato: risultato prodotto dalla visita
 */
-visitaInProfondita(_, _, Nodo, Visitati, Visitati, []) :-
-    membro(Nodo, Visitati), !.
+visitaInProfondita(_, _, Vertice, Visitati, Visitati, []) :-
+    membro(Vertice, Visitati), !.
 
-visitaInProfondita(Combina, Grafo, Nodo, Visitati, VisitatiFinali, Risultato) :-
-    \+ membro(Nodo, Visitati),
-    adiacenti(Grafo, Nodo, Vicini),
+visitaInProfondita(Combina, Grafo, Vertice, Visitati, VisitatiFinali, Risultato) :-
+    \+ membro(Vertice, Visitati),
+    adiacenti(Grafo, Vertice, Vicini),
     visitaInProfondita_lista(Combina, Grafo, Vicini,
-                            [Nodo|Visitati], VisitatiParziali, RisultatiFigli),
-    call(Combina, Nodo, RisultatiFigli, Risultato),
+                            [Vertice|Visitati], VisitatiParziali, RisultatiFigli),
+    call(Combina, Vertice, RisultatiFigli, Risultato),
     VisitatiFinali = VisitatiParziali.
 
 /*
-    Versione della visita che opera su lista di nodi.
+    Versione della visita che opera su lista di vertici.
     Parametri:
     - Combina: strategia di accumulo
     - Grafo: grafo di riferimento
-    - Lista: nodi da visitare
-    - Visitati: nodi già visitati
-    - VisitatiFinali: nodi visitati al termine
+    - Lista: vertici da visitare
+    - Visitati: vertici già visitati
+    - VisitatiFinali: vertici visitati al termine
     - Risultato: risultato complessivo
 */
 visitaInProfondita_lista(_, _, [], Visitati, Visitati, []).
@@ -342,56 +342,56 @@ visitaInProfondita_lista(Combina, Grafo, [H|T], Visitati, VisitatiFinali, Risult
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 /*
-    Calcola l'ordine di completamento dei nodi.
+    Calcola l'ordine di completamento dei vertici.
     Parametri:
     - Grafo: grafo di riferimento
-    - Nodo: nodo di partenza
-    - Visitati: nodi già visitati
-    - VisitatiFinali: nodi visitati al termine
-    - Ordine: lista nodi in ordine di completamento
+    - Vertice: vertice di partenza
+    - Visitati: vertici già visitati
+    - VisitatiFinali: vertici visitati al termine
+    - Ordine: lista vertici in ordine di completamento
 */
-visitaInProfondita_ordine(Grafo, Nodo, Visitati, VisitatiFinali, Ordine) :-
-    visitaInProfondita(combina_fine, Grafo, Nodo, Visitati, VisitatiFinali, Ordine).
+visitaInProfondita_ordine(Grafo, Vertice, Visitati, VisitatiFinali, Ordine) :-
+    visitaInProfondita(combina_fine, Grafo, Vertice, Visitati, VisitatiFinali, Ordine).
 
 /*
     Costruisce una singola SCC.
     Parametri:
     - Grafo: grafo di riferimento
-    - Nodo: nodo di partenza
-    - Visitati: nodi già visitati
-    - VisitatiFinali: nodi visitati al termine
+    - Vertice: vertice di partenza
+    - Visitati: vertici già visitati
+    - VisitatiFinali: vertici visitati al termine
     - Componente: SCC costruita
 */
-visitaInProfondita_scc(Grafo, Nodo, Visitati, VisitatiFinali, Componente) :-
-    visitaInProfondita(combina_testa, Grafo, Nodo, Visitati, VisitatiFinali, Componente).
+visitaInProfondita_scc(Grafo, Vertice, Visitati, VisitatiFinali, Componente) :-
+    visitaInProfondita(combina_testa, Grafo, Vertice, Visitati, VisitatiFinali, Componente).
 
 /*
-    Calcola ordine di completamento per tutti i nodi.
+    Calcola ordine di completamento per tutti i vertici.
     Parametri:
     - Grafo: grafo di riferimento
-    - Ordine: lista nodi in ordine di completamento
+    - Ordine: lista vertici in ordine di completamento
 */
 visitaInProfondita_grafo(Grafo, Ordine) :-
-    nodi(Grafo, Nodi),
-    visitaInProfondita_lista(combina_fine, Grafo, Nodi, [], _, Ordine).
+    vertici(Grafo, Vertici),
+    visitaInProfondita_lista(combina_fine, Grafo, Vertici, [], _, Ordine).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% STRATEGIE DI COMBINAZIONE
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 /*
-    Inserisce nodo in coda alla lista.
+    Inserisce vertice in coda alla lista.
     Parametri:
-    - N: nodo da inserire
+    - N: vertice da inserire
     - Lista: lista corrente
     - Risultato: lista risultante
 */
 combina_fine(N, Lista, Risultato) :- append(Lista, [N], Risultato).
 
 /*
-    Inserisce nodo in testa alla lista.
+    Inserisce vertice in testa alla lista.
     Parametri:
-    - N: nodo da inserire
+    - N: vertice da inserire
     - Lista: lista corrente
     - Risultato: lista risultante
 */
@@ -407,7 +407,7 @@ combina_testa(N, Lista, [N|Lista]).
     - Grafo originale
     - GrafoTrasposto: grafo con archi invertiti
 */
-trasposto(grafo(Nodi, Archi), grafo(Nodi, ArchiTrasposti)) :-
+trasposto(grafo(Vertici, Archi), grafo(Vertici, ArchiTrasposti)) :-
     trasponi_archi(Archi, ArchiTrasposti).
 
 /*
@@ -440,17 +440,17 @@ kosaraju(Grafo, SCCs) :-
     Visita ausiliaria che costruisce progressivamente le SCC.
     Parametri:
     - Grafo: grafo trasposto
-    - Ordine: lista nodi in ordine di visita
-    - Visitati: nodi già visitati
+    - Ordine: lista vertici in ordine di visita
+    - Visitati: vertici già visitati
     - SCCs: lista delle SCC costruite
 */
 kosaraju_visita(_, [], _, []).
-kosaraju_visita(Grafo, [Nodo|Resto], Visitati, SCCs) :-
-    membro(Nodo, Visitati), !,
+kosaraju_visita(Grafo, [Vertice|Resto], Visitati, SCCs) :-
+    membro(Vertice, Visitati), !,
     kosaraju_visita(Grafo, Resto, Visitati, SCCs).
 
-kosaraju_visita(Grafo, [Nodo|Resto], Visitati, [SCC|Altre]) :-
-    visitaInProfondita_scc(Grafo, Nodo, Visitati, Visitati1, SCC),
+kosaraju_visita(Grafo, [Vertice|Resto], Visitati, [SCC|Altre]) :-
+    visitaInProfondita_scc(Grafo, Vertice, Visitati, Visitati1, SCC),
     kosaraju_visita(Grafo, Resto, Visitati1, Altre).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -458,14 +458,14 @@ kosaraju_visita(Grafo, [Nodo|Resto], Visitati, [SCC|Altre]) :-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 /*
-    Trova la SCC che contiene un nodo.
+    Trova la SCC che contiene un vertice.
     Parametri:
-    - Nodo: nodo da cercare
+    - Vertice: vertice da cercare
     - SCCs: lista delle SCC
-    - SCC: SCC che contiene il nodo
+    - SCC: SCC che contiene il vertice
 */
-scc_di_nodo(Nodo, [S|_], S) :- membro(Nodo, S), !.
-scc_di_nodo(Nodo, [_|Resto], S) :- scc_di_nodo(Nodo, Resto, S).
+scc_di_vertice(Vertice, [S|_], S) :- membro(Vertice, S), !.
+scc_di_vertice(Vertice, [_|Resto], S) :- scc_di_vertice(Vertice, Resto, S).
 
 /*
     Verifica se esiste arco tra due SCC diverse.
@@ -478,8 +478,8 @@ scc_di_nodo(Nodo, [_|Resto], S) :- scc_di_nodo(Nodo, Resto, S).
 arco_scc(Grafo, SCCs, S1, S2) :-
     archi(Grafo, Archi),
     membro((X,Y), Archi),
-    scc_di_nodo(X, SCCs, S1),
-    scc_di_nodo(Y, SCCs, S2),
+    scc_di_vertice(X, SCCs, S1),
+    scc_di_vertice(Y, SCCs, S2),
     S1 \= S2.
 
 /*
