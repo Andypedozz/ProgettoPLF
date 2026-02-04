@@ -152,7 +152,7 @@ acquisisciVertice vertici = do
     - il secondo argomento è la lista degli archi
 -}
 verticiAdiacenti :: Int -> [(Int, Int)] -> [Int]
-verticiAdiacenti v archi = [ y | ( x , y ) <- archi , x == v ]
+verticiAdiacenti v archi = [y | (x, y) <- archi, x == v]
 
 {- 
     Funzione che inverte la direzione di tutti gli archi del grafo.
@@ -160,7 +160,7 @@ verticiAdiacenti v archi = [ y | ( x , y ) <- archi , x == v ]
 -}
 invertiArchi :: [(Int, Int)] -> [(Int, Int)]
 invertiArchi [] = []
-invertiArchi ( ( x , y ) : xs ) = ( y , x ) : invertiArchi xs
+invertiArchi ((x, y) : xs) = (y, x) : invertiArchi xs
 
 --------------------------------------------------------
 -- FUNZIONI DI COMBINAZIONE PER LA VISITA IN PROFONDITA'
@@ -197,7 +197,7 @@ aggiungiInTesta v res = v : res
 -}
 visitaInProfondita :: (Int -> [Int] -> [Int]) -> Int -> [(Int, Int)] -> [Int] -> ([Int], [Int])
 visitaInProfondita combina v archi visitati
-    | v `elem` visitati = ( visitati , [] )
+    | v `elem` visitati = (visitati , [])
     | otherwise =
         let visitati' = v : visitati
             (visitatiFinali, risultatiFigli) =
@@ -233,14 +233,14 @@ visitaInProfonditaComponente = visitaInProfondita aggiungiInTesta
     - il primo argomento è la lista dei vertici
     - il secondo argomento è la lista degli archi
 -}
-ordineDiFine :: [ Int ] -> [ ( Int , Int ) ] -> [ Int ]
+ordineDiFine :: [Int] -> [(Int, Int)] -> [Int]
 ordineDiFine vertici archi =
     snd $
-        foldl visitaGlobale ( [] , [] ) vertici
+        foldl visitaGlobale ([], []) vertici
   where
-    visitaGlobale ( vis , ord ) v =
-        let ( vis' , ord' ) = visitaInProfonditaOrdineFine v archi vis
-        in ( vis' , ord ++ ord' )
+    visitaGlobale (vis, ord) v =
+        let (vis', ord') = visitaInProfonditaOrdineFine v archi vis
+        in (vis', ord ++ ord')
 
 --------------------------------------------------
 -- ALGORITMO DI KOSARAJU
