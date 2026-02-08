@@ -219,7 +219,7 @@ leggi_e_valida_numero(Line, N) :-
 numero_valido(N, N) :- integer(N).
 numero_valido(Termine, _) :- 
     \+ integer(Termine), 
-    write('Errore: "'), write(Termine), write('" non è un numero intero.'), nl,
+    write('Errore: "'), write(Termine), write('" non e'' un numero intero.'), nl,
     fail.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
