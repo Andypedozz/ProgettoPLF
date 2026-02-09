@@ -18,7 +18,7 @@
 
 module Main where
 
--- Caricamento della funzione per eliminare duplicati da una lista
+-- Import della funzione nub per eliminare duplicati da una lista
 import Data.List ( nub )
 
 --------------------------------------------------
@@ -27,10 +27,16 @@ import Data.List ( nub )
 
 {- 
     Azione principale del programma.
-    - legge un grafo da file
-    - calcola le componenti fortemente connesse
-    - costruisce il grafo compresso
-    - calcola quante SCC hanno grado entrante zero
+
+    1) Legge un grafo orientato dal file "input.txt".
+    2) Verifica che il formato e il contenuto del grafo siano validi.
+    3) Calcola le Componenti Fortemente Connesse (SCC) con Kosaraju.
+    4) Costruisce il grafo compresso (ogni SCC diventa un nodo).
+    5) Richiede all'utente un vertice valido di partenza.
+    6) Conta quante SCC hanno grado entrante zero,
+       escludendo la SCC contenente il vertice scelto.
+
+    Se il file contiene errori il programma termina in modo controllato.
 -}
 main :: IO ()
 main = do
@@ -82,44 +88,94 @@ main = do
 --------------------------------------------------
 
 {- 
-    Azione che Legge e valida un grafo da file.
-    Restituisce:
-    - Just (vertici, archi) se il parsing e la validazione hanno successo
-    - Nothing in caso di errore
--}
+    Azione che legge e valida un grafo orientato da file.
 
+    Parametri:
+    - nomeFile : percorso del file da leggere
+
+    Il file deve contenere almeno due righe:
+    1) Lista dei vertici  (es: [1,2,3])
+    2) Lista degli archi  (es: [(1,2),(2,3)])
+
+    Restituisce:
+    - Just (vertici, archi) se parsing e validazione hanno successo
+    - Nothing se si verifica un errore
+-}
 leggiGrafoDaFile :: FilePath -> IO (Maybe ([Int], [(Int, Int)]))
 leggiGrafoDaFile nomeFile = do
     contenuto <- readFile nomeFile
     case lines contenuto of
         vLine:aLine:_ -> parseGrafo vLine aLine
-        _ -> errore "Errore: il file deve contenere almeno due righe."
+        _ -> errore "Errore: il file deve contenere almeno due righe (lista vertici e lista archi)."
 
--- Azione che effettua il parsing delle due righe
+{- 
+    Azione che esegue il parsing testuale delle due righe lette dal file.
+
+    Parametri:
+    - rVertici : stringa contenente la lista dei vertici
+    - rArchi   : stringa contenente la lista degli archi
+
+    Usa 'reads' per convertire le stringhe nei tipi Haskell corretti.
+-}
 parseGrafo :: String -> String -> IO (Maybe ([Int], [(Int, Int)]))
 parseGrafo rVertici rArchi =
     case (reads rVertici, reads rArchi) of
         ([(vertici, "")], [(archi, "")]) ->
             validaGrafo vertici archi
         _ ->
-            errore "Errore: formato non valido delle liste (parentesi o virgole errate)."
+            errore "Errore: formato non valido. Verificare parentesi, virgole e struttura delle liste."
 
--- Azione che effettua la validazione del grafo
+{- 
+    Azione che verifica la validità semantica del grafo.
+
+    Parametri:
+    - vertici : lista dei vertici del grafo
+    - archi   : lista degli archi orientati del grafo
+
+    Controlli effettuati:
+    - lista vertici non vuota
+    - assenza di vertici duplicati
+    - archi che usano solo vertici esistenti
+-}
 validaGrafo :: [Int] -> [(Int, Int)] -> IO (Maybe ([Int], [(Int, Int)]))
 validaGrafo vertici archi
     | null vertici =
-        errore "Errore: la lista dei vertici è vuota."
+        errore "Errore: la lista dei vertici è vuota. Il grafo deve contenere almeno un vertice."
+    | not (verticiSenzaDuplicati vertici) =
+        errore "Errore: la lista dei vertici contiene duplicati. Ogni vertice deve comparire una sola volta."
     | not (archiValidi vertici archi) =
-        errore "Errore: alcuni archi contengono vertici non presenti nella lista."
+        errore "Errore: esistono archi che utilizzano vertici non presenti nella lista dei vertici."
     | otherwise =
         return (Just (vertici, archi))
 
--- Controllo archi
+{- 
+    Funzione che verifica l'assenza di vertici duplicati.
+
+    Parametri:
+    - vertici : lista dei vertici del grafo
+
+    Restituisce:
+    - True se tutti i vertici sono distinti
+    - False se esiste almeno un duplicato
+-}
+verticiSenzaDuplicati :: [Int] -> Bool
+verticiSenzaDuplicati vertici =
+    length vertici == length (nub vertici)
+
+{- 
+    Funzione che controlla che ogni arco utilizzi solo vertici esistenti.
+
+    Parametri:
+    - vertici : lista dei vertici ammessi
+    - archi   : lista degli archi del grafo
+-}
 archiValidi :: [Int] -> [(Int, Int)] -> Bool
 archiValidi vertici =
     all (\(x, y) -> x `elem` vertici && y `elem` vertici)
 
--- Azione che stampa un errore e restituisce Nothing
+{- 
+    Azione che stampa un messaggio di errore e restituisce Nothing.
+-}
 errore :: String -> IO (Maybe a)
 errore msg = putStrLn msg >> return Nothing
 
@@ -129,7 +185,12 @@ errore msg = putStrLn msg >> return Nothing
 
 {- 
     Azione che acquisisce da tastiera un vertice valido.
-    - l'argomento è la lista dei vertici del grafo
+
+    Parametri:
+    - vertici : lista dei vertici del grafo
+
+    Continua a chiedere input finché l'utente non inserisce
+    un intero presente nella lista dei vertici.
 -}
 acquisisciVertice :: [Int] -> IO Int
 acquisisciVertice vertici = do
@@ -139,7 +200,7 @@ acquisisciVertice vertici = do
     case reads input :: [(Int, String)] of
         [(v, _)] | v `elem` vertici -> return v
         _ -> do
-            putStrLn "Vertice non valido! Riprova."
+            putStrLn "Vertice non valido: inserire un numero presente nella lista dei vertici."
             acquisisciVertice vertici
 
 --------------------------------------------------
@@ -147,16 +208,17 @@ acquisisciVertice vertici = do
 --------------------------------------------------
 
 {- 
-    Funzione che restituisce tutti i vertici adiacenti a un vertice.
-    - il primo argomento è il vertice di partenza
-    - il secondo argomento è la lista degli archi
+    Restituisce tutti i vertici adiacenti ad un vertice dato.
+
+    Parametri:
+    - v     : vertice di partenza
+    - archi : lista degli archi del grafo
 -}
 verticiAdiacenti :: Int -> [(Int, Int)] -> [Int]
 verticiAdiacenti v archi = [y | (x, y) <- archi, x == v]
 
 {- 
-    Funzione che inverte la direzione di tutti gli archi del grafo.
-    - l'argomento è la lista degli archi
+    Inverte la direzione di tutti gli archi del grafo.
 -}
 invertiArchi :: [(Int, Int)] -> [(Int, Int)]
 invertiArchi [] = []
@@ -164,19 +226,13 @@ invertiArchi ((x, y) : xs) = (y, x) : invertiArchi xs
 
 --------------------------------------------------------
 -- FUNZIONI DI COMBINAZIONE PER LA VISITA IN PROFONDITA'
---------------------------------------------------------
+--------------------------------------------------
 
-{- 
-    Funzione di combinazione che inserisce il vertice
-    alla fine della lista dei risultati (post-order).
--}
+{- Inserisce il vertice in coda (post-order). -}
 aggiungiInCoda :: Int -> [Int] -> [Int]
 aggiungiInCoda v res = res ++ [v]
 
-{- 
-    Funzione di combinazione che inserisce il vertice
-    all'inizio della lista dei risultati (pre-order).
--}
+{- Inserisce il vertice in testa (pre-order). -}
 aggiungiInTesta :: Int -> [Int] -> [Int]
 aggiungiInTesta v res = v : res
 
@@ -185,15 +241,13 @@ aggiungiInTesta v res = v : res
 --------------------------------------------------
 
 {- 
-    Visita in profondità generica parametrizzata da una funzione di combinazione.
-    - il primo argomento decide come aggiungere il vertice corrente
-    - il secondo argomento è il vertice di partenza
-    - il terzo argomento è la lista degli archi
-    - il quarto argomento è la lista dei vertici visitati
-    
-    Restituisce:
-    - la lista aggiornata dei vertici visitati
-    - la lista dei risultati accumulati secondo la strategia scelta
+    Implementazione generica della DFS parametrizzata.
+
+    Parametri:
+    - combina  : funzione di combinazione dei risultati
+    - v        : vertice corrente
+    - archi    : lista archi
+    - visitati : lista vertici già visitati
 -}
 visitaInProfondita :: (Int -> [Int] -> [Int]) -> Int -> [(Int, Int)] -> [Int] -> ([Int], [Int])
 visitaInProfondita combina v archi visitati
@@ -209,29 +263,23 @@ visitaInProfondita combina v archi visitati
         in (vis', res ++ res')
 
 --------------------------------------------------
--- VISITA IN PROFONDITA' SPECIALIZZATE
+-- VISITA SPECIALIZZATE
 --------------------------------------------------
 
-{- 
-    Visita in profondità che calcola l'ordine di fine dei vertici.
--}
+{- DFS per calcolo ordine di fine. -}
 visitaInProfonditaOrdineFine :: Int -> [(Int, Int)] -> [Int] -> ([Int], [Int])
 visitaInProfonditaOrdineFine = visitaInProfondita aggiungiInCoda
 
-{- 
-    Visita in profondità che costruisce una singola componente fortemente connessa.
--}
+{- DFS per costruzione SCC. -}
 visitaInProfonditaComponente :: Int -> [(Int, Int)] -> [Int] -> ([Int], [Int])
 visitaInProfonditaComponente = visitaInProfondita aggiungiInTesta
 
 --------------------------------------------------
--- ORDINE DI FINE GLOBALE
+-- ORDINE DI FINE
 --------------------------------------------------
 
 {- 
-    Funzione che calcola l'ordine di fine globale del grafo.
-    - il primo argomento è la lista dei vertici
-    - il secondo argomento è la lista degli archi
+    Calcola ordine di fine globale del grafo.
 -}
 ordineDiFine :: [Int] -> [(Int, Int)] -> [Int]
 ordineDiFine vertici archi =
@@ -243,14 +291,11 @@ ordineDiFine vertici archi =
         in (vis', ord ++ ord')
 
 --------------------------------------------------
--- ALGORITMO DI KOSARAJU
+-- KOSARAJU
 --------------------------------------------------
 
 {- 
-    Funzione che calcola tutte le componenti fortemente connesse del grafo
-    utilizzando l'algoritmo di Kosaraju.
-    - il primo argomento è la lista dei vertici
-    - il secondo argomento è la lista degli archi
+    Implementazione algoritmo di Kosaraju per SCC.
 -}
 kosaraju :: [Int] -> [(Int, Int)] -> [[Int]]
 kosaraju vertici archi =
@@ -272,22 +317,14 @@ kosaraju vertici archi =
 -- GRAFO COMPRESSO
 --------------------------------------------------
 
-{- 
-    Funzione che restituisce l'indice della SCC contenente un vertice.
-    - il primo argomento è il vertice
-    - il secondo argomento è la lista delle SCC
--}
+{- Restituisce indice SCC contenente un vertice. -}
 indiceSCC :: Int -> [[Int]] -> Int
 indiceSCC v sccs =
     case [i | (i, comp) <- zip [0 ..] sccs , v `elem` comp] of
         (i:_) -> i
-        []        -> error ("Vertice non trovato: " ++ show v)
+        []        -> error ("Errore interno: vertice non trovato in alcuna SCC: " ++ show v)
 
-{- 
-    Funzione che costruisce il grafo compresso.
-    - il primo argomento sono le SCC
-    - il secondo argomento è la lista degli archi originali
--}
+{- Costruisce grafo compresso delle SCC. -}
 comprimiGrafo :: [[Int]] -> [(Int, Int)] -> [(Int, Int)]
 comprimiGrafo sccs archi =
     nub
@@ -298,22 +335,12 @@ comprimiGrafo sccs archi =
         , i /= j
         ]
 
-{- 
-    Funzione che calcola il grado entrante di una SCC.
-    - il primo argomento è l'indice della SCC
-    - il secondo argomento è la lista degli archi del grafo compresso
--}
+{- Calcola grado entrante di una SCC. -}
 gradoEntrante :: Int -> [(Int, Int)] -> Int
 gradoEntrante c archi =
     length [() | (_, y) <- archi , y == c]
 
-{- 
-    Funzione che conta quante SCC hanno grado entrante zero,
-    escludendo quella contenente il vertice di partenza.
-    - il primo argomento è il vertice di partenza
-    - il secondo argomento sono le SCC
-    - il terzo argomento è il grafo compresso
--}
+{- Conta SCC con grado entrante zero (esclusa quella di partenza). -}
 contaSCCConGradoZero :: Int -> [[Int]] -> [(Int, Int)] -> Int
 contaSCCConGradoZero v sccs archi =
     length
