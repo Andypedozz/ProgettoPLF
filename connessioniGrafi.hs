@@ -26,7 +26,7 @@ import Data.List ( nub )
 --------------------------------------------------
 
 {- 
-    Funzione principale del programma.
+    Azione principale del programma.
     - legge un grafo da file
     - calcola le componenti fortemente connesse
     - costruisce il grafo compresso
@@ -82,7 +82,7 @@ main = do
 --------------------------------------------------
 
 {- 
-    Legge e valida un grafo da file.
+    Azione che Legge e valida un grafo da file.
     Restituisce:
     - Just (vertici, archi) se il parsing e la validazione hanno successo
     - Nothing in caso di errore
@@ -95,7 +95,7 @@ leggiGrafoDaFile nomeFile = do
         vLine:aLine:_ -> parseGrafo vLine aLine
         _ -> errore "Errore: il file deve contenere almeno due righe."
 
--- Parsing delle due righe
+-- Azione che effettua il parsing delle due righe
 parseGrafo :: String -> String -> IO (Maybe ([Int], [(Int, Int)]))
 parseGrafo rVertici rArchi =
     case (reads rVertici, reads rArchi) of
@@ -104,7 +104,7 @@ parseGrafo rVertici rArchi =
         _ ->
             errore "Errore: formato non valido delle liste (parentesi o virgole errate)."
 
--- Validazione semantica
+-- Azione che effettua la validazione del grafo
 validaGrafo :: [Int] -> [(Int, Int)] -> IO (Maybe ([Int], [(Int, Int)]))
 validaGrafo vertici archi
     | null vertici =
@@ -119,7 +119,7 @@ archiValidi :: [Int] -> [(Int, Int)] -> Bool
 archiValidi vertici =
     all (\(x, y) -> x `elem` vertici && y `elem` vertici)
 
--- Utility per errori
+-- Azione che stampa un errore e restituisce Nothing
 errore :: String -> IO (Maybe a)
 errore msg = putStrLn msg >> return Nothing
 
@@ -128,7 +128,7 @@ errore msg = putStrLn msg >> return Nothing
 --------------------------------------------------
 
 {- 
-    Funzione che acquisisce da tastiera un vertice valido.
+    Azione che acquisisce da tastiera un vertice valido.
     - l'argomento è la lista dei vertici del grafo
 -}
 acquisisciVertice :: [Int] -> IO Int
