@@ -1,4 +1,4 @@
-Dati di test: per eseguirli è sufficiente copiare e incollare i dati del grafo uno alla volta nel file input.txt
+Dati di test: per eseguirli è sufficiente copiare e incollare le righe relative ai vertici e gli archi del grafo uno alla volta nel file input.txt
 
 Test 1
 Dati grafo:

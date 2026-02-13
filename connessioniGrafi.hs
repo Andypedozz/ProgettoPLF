@@ -8,12 +8,20 @@
 -- ##################################################################
 
 {-
-    Specifica : Scrivere un programma Haskell che legga un grafo orientato
-    da file e calcoli le sue Componenti Fortemente Connesse (SCC)
-    utilizzando l'algoritmo di Kosaraju.
-    Successivamente il programma costruisce il grafo compresso
-    e determina il numero di SCC con grado entrante zero,
-    escludendo la SCC contenente un vertice scelto dall'utente.
+    Scrivere un programma Haskell e un programma Prolog che leggano da file e stampino a schermo i seguenti dati di input:
+    * Un insieme di numeri interi
+    * Una insieme di coppie di numeri interi
+    Successivamente il programma dovrà:
+    * Costruire un grafo orientato i cui vertici sono costituiti dalla lista di interi letta
+      da file e gli archi sono rappresentati dalle coppie di interi letti da file.
+    * Costruire un nuovo grafo orientato in cui i vertici sono le componenti
+      fortemente connesse del grafo iniziale rappresentate da un singolo vertice
+      scelto arbitrariamente tra i vertici di una componente fortemente connessa e
+      gli archi sono i collegamenti tra le componenti fortemente connesse distinte.
+    * Acquisire un numero intero tra i vertici del grafo a rappresentare il vertice di
+      partenza e stampare a schermo il numero di componenti fortemente
+      connesse diverse dalla componente contenente il vertice di partenza che
+      hanno grado entrante uguale a 0.
 -}
 
 module Main where
@@ -88,7 +96,7 @@ main = do
 --------------------------------------------------
 
 {- 
-    Azione che legge e valida un grafo orientato da file.
+    Funzione che legge e valida un grafo orientato da file.
 
     Parametri:
     - nomeFile : percorso del file da leggere
