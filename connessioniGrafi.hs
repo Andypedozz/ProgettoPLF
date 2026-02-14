@@ -182,7 +182,7 @@ archiValidi vertici =
     all (\(x, y) -> x `elem` vertici && y `elem` vertici)
 
 {- 
-    Azione che stampa un messaggio di errore e restituisce Nothing.
+    Funzione che stampa un messaggio di errore e restituisce Nothing.
 -}
 errore :: String -> IO (Maybe a)
 errore msg = putStrLn msg >> return Nothing
@@ -192,7 +192,7 @@ errore msg = putStrLn msg >> return Nothing
 --------------------------------------------------
 
 {- 
-    Azione che acquisisce da tastiera un vertice valido.
+    Funzione che acquisisce da tastiera un vertice valido.
 
     Parametri:
     - vertici : lista dei vertici del grafo
@@ -216,8 +216,7 @@ acquisisciVertice vertici = do
 --------------------------------------------------
 
 {- 
-    Restituisce tutti i vertici adiacenti ad un vertice dato.
-
+    Funzione che restituisce tutti i vertici adiacenti ad un vertice dato.
     Parametri:
     - v     : vertice di partenza
     - archi : lista degli archi del grafo
@@ -226,7 +225,12 @@ verticiAdiacenti :: Int -> [(Int, Int)] -> [Int]
 verticiAdiacenti v archi = [y | (x, y) <- archi, x == v]
 
 {- 
-    Inverte la direzione di tutti gli archi del grafo.
+    Funzione che inverte la direzione di tutti gli archi del grafo.
+    Parametri:
+    - archi : lista degli archi del grafo
+
+    Restituisce:
+    - archi invertiti
 -}
 invertiArchi :: [(Int, Int)] -> [(Int, Int)]
 invertiArchi [] = []
@@ -236,11 +240,27 @@ invertiArchi ((x, y) : xs) = (y, x) : invertiArchi xs
 -- FUNZIONI DI COMBINAZIONE PER LA VISITA IN PROFONDITA'
 --------------------------------------------------
 
-{- Inserisce il vertice in coda (post-order). -}
+{-
+    Funzione che inserisce il vertice in coda (post-order).
+    Parametri:
+    - vertice
+    - risultato
+
+    Restituisce:
+    - risultato aggiornato
+-}
 aggiungiInCoda :: Int -> [Int] -> [Int]
 aggiungiInCoda v res = res ++ [v]
 
-{- Inserisce il vertice in testa (pre-order). -}
+{-
+    Funzione che inserisce il vertice in test (pre-order).
+    Parametri:
+    - vertice
+    - risultato
+
+    Restituisce:
+    - risultato aggiornato
+-}
 aggiungiInTesta :: Int -> [Int] -> [Int]
 aggiungiInTesta v res = v : res
 
@@ -249,7 +269,7 @@ aggiungiInTesta v res = v : res
 --------------------------------------------------
 
 {- 
-    Implementazione generica della DFS parametrizzata.
+    Funzione che implementa una visita in profondità generica parametrizzata.
 
     Parametri:
     - combina  : funzione di combinazione dei risultati
@@ -274,11 +294,33 @@ visitaInProfondita combina v archi visitati
 -- VISITA SPECIALIZZATE
 --------------------------------------------------
 
-{- DFS per calcolo ordine di fine. -}
+{- 
+    Funzione che implementa la visita in profondità
+    per il calcolo dell'ordine di fine.
+    Parametri:
+    - vertice di partenza
+    - archi
+    - visitati
+
+    Restituisce:
+    - visitati
+    - ordine di fine
+-}
 visitaInProfonditaOrdineFine :: Int -> [(Int, Int)] -> [Int] -> ([Int], [Int])
 visitaInProfonditaOrdineFine = visitaInProfondita aggiungiInCoda
 
-{- DFS per costruzione SCC. -}
+{-
+    Funzione che implementa la visita in profondità per
+    la costruzione delle componenti fortemente connesse.
+    Parametri:
+    - vertice di partenza
+    - archi
+    - visitati
+
+    Restituisce:
+    - visitati
+    - scc
+-}
 visitaInProfonditaComponente :: Int -> [(Int, Int)] -> [Int] -> ([Int], [Int])
 visitaInProfonditaComponente = visitaInProfondita aggiungiInTesta
 
@@ -287,7 +329,13 @@ visitaInProfonditaComponente = visitaInProfondita aggiungiInTesta
 --------------------------------------------------
 
 {- 
-    Calcola ordine di fine globale del grafo.
+    Funzione che calcola l'ordine di fine globale del grafo.
+    Parametri:
+    - vertici
+    - archi
+
+    Restituisce:
+    - ordine
 -}
 ordineDiFine :: [Int] -> [(Int, Int)] -> [Int]
 ordineDiFine vertici archi =
@@ -303,7 +351,14 @@ ordineDiFine vertici archi =
 --------------------------------------------------
 
 {- 
-    Implementazione algoritmo di Kosaraju per SCC.
+    Funzione che implementa l'algoritmo di Kosaraju
+    per componenti fortemente connesse.
+    Parametri:
+    - vertici
+    - archi
+
+    Restituisce:
+    - componenti
 -}
 kosaraju :: [Int] -> [(Int, Int)] -> [[Int]]
 kosaraju vertici archi =
@@ -325,14 +380,32 @@ kosaraju vertici archi =
 -- GRAFO COMPRESSO
 --------------------------------------------------
 
-{- Restituisce indice SCC contenente un vertice. -}
+{-
+    Funzione che restituisce l'indice della componente
+    fortemente connessa contenente un vertice.
+    Parametri:
+    - vertice
+    - componenti
+
+    Restituisce:
+    - indice
+-}
 indiceSCC :: Int -> [[Int]] -> Int
 indiceSCC v sccs =
     case [i | (i, comp) <- zip [0 ..] sccs , v `elem` comp] of
         (i:_) -> i
         []        -> error ("Errore interno: vertice non trovato in alcuna SCC: " ++ show v)
 
-{- Costruisce grafo compresso delle SCC. -}
+{-
+    Funzione che costruisce il grafo compresso
+    delle componenti fortemente connesse.
+    Parametri:
+    - componenti
+    - archi
+
+    Restituisce:
+    - archi
+-}
 comprimiGrafo :: [[Int]] -> [(Int, Int)] -> [(Int, Int)]
 comprimiGrafo sccs archi =
     nub
@@ -343,12 +416,31 @@ comprimiGrafo sccs archi =
         , i /= j
         ]
 
-{- Calcola grado entrante di una SCC. -}
+{-
+    Funzioen che calcola il grado entrante di
+    una componente fortemente connessa.
+    Parametri:
+    - indice
+    - archi
+
+    Restituisce:
+    - grado
+-}
 gradoEntrante :: Int -> [(Int, Int)] -> Int
 gradoEntrante c archi =
     length [() | (_, y) <- archi , y == c]
 
-{- Conta SCC con grado entrante zero (esclusa quella di partenza). -}
+{-
+    Funzione che conta le componenti fortemente connesse
+    con grado entrante zero (esclusa quella di partenza).
+    Parametri:
+    - vertice di partenza
+    - componenti
+    - archi
+
+    Restituisce:
+    - numero
+-}
 contaSCCConGradoZero :: Int -> [[Int]] -> [(Int, Int)] -> Int
 contaSCCConGradoZero v sccs archi =
     length
