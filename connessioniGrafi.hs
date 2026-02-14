@@ -117,7 +117,7 @@ leggiGrafoDaFile nomeFile = do
         _ -> errore "Errore: il file deve contenere almeno due righe (lista vertici e lista archi)."
 
 {- 
-    Azione che esegue il parsing testuale delle due righe lette dal file.
+    Funzione che esegue il parsing testuale delle due righe lette dal file.
 
     Parametri:
     - rVertici : stringa contenente la lista dei vertici
@@ -134,7 +134,7 @@ parseGrafo rVertici rArchi =
             errore "Errore: formato non valido. Verificare parentesi, virgole e struttura delle liste."
 
 {- 
-    Azione che verifica la validità semantica del grafo.
+    Funzione che verifica la validità semantica del grafo.
 
     Parametri:
     - vertici : lista dei vertici del grafo
