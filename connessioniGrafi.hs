@@ -28,6 +28,8 @@ module Main where
 
 -- Import della funzione nub per eliminare duplicati da una lista
 import Data.List ( nub )
+import System.IO
+import GHC.IO.Encoding (setLocaleEncoding, utf8)
 
 --------------------------------------------------
 -- FUNZIONE PRINCIPALE
@@ -95,6 +97,21 @@ main = do
 -- LETTURA E VALIDAZIONE DEL GRAFO DA FILE
 --------------------------------------------------
 
+-- Rimuove eventuale BOM UTF8
+stripBOM :: String -> String
+stripBOM ('\xFEFF':xs) = xs
+stripBOM xs = xs
+
+-- Rimuove CR finale (newline Windows)
+stripCR :: String -> String
+stripCR xs
+    | not (null xs) && last xs == '\r' = init xs
+    | otherwise = xs
+
+-- Normalizza completamente una riga
+normalizeLine :: String -> String
+normalizeLine = stripCR . stripBOM
+
 {- 
     Funzione che legge e valida un grafo orientato da file.
 
@@ -111,10 +128,18 @@ main = do
 -}
 leggiGrafoDaFile :: FilePath -> IO (Maybe ([Int], [(Int, Int)]))
 leggiGrafoDaFile nomeFile = do
-    contenuto <- readFile nomeFile
-    case lines contenuto of
+    setLocaleEncoding utf8
+
+    h <- openFile nomeFile ReadMode
+    hSetEncoding h utf8
+
+    contenuto <- hGetContents h
+
+    let righe = map normalizeLine (lines contenuto)
+
+    case righe of
         vLine:aLine:_ -> parseGrafo vLine aLine
-        _ -> errore "Errore: il file deve contenere almeno due righe (lista vertici e lista archi)."
+        _ -> errore "Errore: il file deve contenere almeno due righe."
 
 {- 
     Funzione che esegue il parsing testuale delle due righe lette dal file.
