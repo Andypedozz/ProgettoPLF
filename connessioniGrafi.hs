@@ -97,18 +97,27 @@ main = do
 -- LETTURA E VALIDAZIONE DEL GRAFO DA FILE
 --------------------------------------------------
 
--- Rimuove eventuale BOM UTF8
+{-
+    Funzione per rimuovere il Byte Order Mark (BOM) da una stringa
+    Parametro: Stringa da processare
+-}
 stripBOM :: String -> String
 stripBOM ('\xFEFF':xs) = xs
 stripBOM xs = xs
 
--- Rimuove CR finale (newline Windows)
+{-
+    Funzione per rimuovere l'andata a capo da una stringa Windows
+    Parametro: Stringa da processare
+-}
 stripCR :: String -> String
 stripCR xs
     | not (null xs) && last xs == '\r' = init xs
     | otherwise = xs
 
--- Normalizza completamente una riga
+{- 
+    Funzione per normalizzare completamente una riga
+    Parametro: Stringa da processare
+-}
 normalizeLine :: String -> String
 normalizeLine = stripCR . stripBOM
 
@@ -227,8 +236,8 @@ errore msg = putStrLn msg >> return Nothing
 -}
 acquisisciVertice :: [Int] -> IO Int
 acquisisciVertice vertici = do
-    putStrLn $
-        "Inserisci il vertice di partenza (tra " ++ show vertici ++ "):"
+    putStr $
+        "Inserisci il vertice di partenza (tra " ++ show vertici ++ "): "
     input <- getLine
     case reads input :: [(Int, String)] of
         [(v, _)] | v `elem` vertici -> return v
