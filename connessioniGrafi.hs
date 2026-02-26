@@ -54,7 +54,8 @@ main = do
 
     case risultato of
         Nothing -> do
-            putStrLn "\nIl programma è stato terminato a causa di errori nel file di input.\n"
+            putStrLn "\nIl programma è stato terminato 
+                      a causa di errori nel file di input.\n"
 
         Just (vertici, archi) -> do
 
@@ -165,7 +166,8 @@ parseGrafo rVertici rArchi =
         ([(vertici, "")], [(archi, "")]) ->
             validaGrafo vertici archi
         _ ->
-            errore "Errore: formato non valido. Verificare parentesi, virgole e struttura delle liste."
+            errore "Errore: formato non valido.
+                    Verificare parentesi, virgole e struttura delle liste."
 
 {- 
     Funzione che verifica la validità semantica del grafo.
@@ -182,11 +184,14 @@ parseGrafo rVertici rArchi =
 validaGrafo :: [Int] -> [(Int, Int)] -> IO (Maybe ([Int], [(Int, Int)]))
 validaGrafo vertici archi
     | null vertici =
-        errore "Errore: la lista dei vertici è vuota. Il grafo deve contenere almeno un vertice."
+        errore "Errore: la lista dei vertici è vuota.
+                Il grafo deve contenere almeno un vertice."
     | not (verticiSenzaDuplicati vertici) =
-        errore "Errore: la lista dei vertici contiene duplicati. Ogni vertice deve comparire una sola volta."
+        errore "Errore: la lista dei vertici contiene duplicati.
+                Ogni vertice deve comparire una sola volta."
     | not (archiValidi vertici archi) =
-        errore "Errore: esistono archi che utilizzano vertici non presenti nella lista dei vertici."
+        errore "Errore: esistono archi che utilizzano vertici
+                non presenti nella lista dei vertici."
     | otherwise =
         return (Just (vertici, archi))
 
@@ -242,7 +247,8 @@ acquisisciVertice vertici = do
     case reads input :: [(Int, String)] of
         [(v, _)] | v `elem` vertici -> return v
         _ -> do
-            putStrLn "Vertice non valido: inserire un numero presente nella lista dei vertici."
+            putStrLn "Vertice non valido: 
+                      inserire un numero presente nella lista dei vertici."
             acquisisciVertice vertici
 
 --------------------------------------------------
@@ -428,7 +434,7 @@ indiceSCC :: Int -> [[Int]] -> Int
 indiceSCC v sccs =
     case [i | (i, comp) <- zip [0 ..] sccs , v `elem` comp] of
         (i:_) -> i
-        []        -> error ("Errore interno: vertice non trovato in alcuna SCC: " ++ show v)
+        []    -> error ("Errore interno: vertice non trovato in alcuna SCC: " ++ show v)
 
 {-
     Funzione che costruisce il grafo compresso
