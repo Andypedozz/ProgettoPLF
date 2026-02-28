@@ -245,6 +245,7 @@ acquisisciVertice :: [Int] -> IO Int
 acquisisciVertice vertici = do
     putStr $
         "Inserisci il vertice di partenza (tra " ++ show vertici ++ "): "
+    hFlush stdout
     input <- getLine
     case reads input :: [(Int, String)] of
         [(v, _)] | v `elem` vertici -> return v
@@ -459,7 +460,7 @@ comprimiGrafo sccs archi =
         ]
 
 {-
-    Funzioen che calcola il grado entrante di
+    Funzione che calcola il grado entrante di
     una componente fortemente connessa.
     Parametri:
     - indice
