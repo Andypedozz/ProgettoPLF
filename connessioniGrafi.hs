@@ -8,12 +8,14 @@
 -- ##################################################################
 
 {-
-    Scrivere un programma Haskell e un programma Prolog che leggano da file e stampino a schermo i seguenti dati di input:
+    Scrivere un programma Haskell e un programma Prolog che leggano
+    da file e stampino a schermo i seguenti dati di input:
     * Un insieme di numeri interi
     * Una insieme di coppie di numeri interi
     Successivamente il programma dovrà:
-    * Costruire un grafo orientato i cui vertici sono costituiti dalla lista di interi letta
-      da file e gli archi sono rappresentati dalle coppie di interi letti da file.
+    * Costruire un grafo orientato i cui vertici sono costituiti
+      dalla lista di interi letta da file e gli archi
+      sono rappresentati dalle coppie di interi letti da file.
     * Costruire un nuovo grafo orientato in cui i vertici sono le componenti
       fortemente connesse del grafo iniziale rappresentate da un singolo vertice
       scelto arbitrariamente tra i vertici di una componente fortemente connessa e
@@ -54,8 +56,8 @@ main = do
 
     case risultato of
         Nothing -> do
-            putStrLn "\nIl programma è stato terminato 
-                      a causa di errori nel file di input.\n"
+            putStrLn ("\nIl programma è stato terminato " ++
+                     "a causa di errori nel file di input.\n")
 
         Just (vertici, archi) -> do
 
@@ -102,16 +104,16 @@ main = do
     Funzione per rimuovere il Byte Order Mark (BOM) da una stringa
     Parametro: Stringa da processare
 -}
-stripBOM :: String -> String
-stripBOM ('\xFEFF':xs) = xs
-stripBOM xs = xs
+rimuoviBOM :: String -> String
+rimuoviBOM ('\xFEFF':xs) = xs
+rimuoviBOM xs = xs
 
 {-
     Funzione per rimuovere l'andata a capo da una stringa Windows
     Parametro: Stringa da processare
 -}
-stripCR :: String -> String
-stripCR xs
+rimuoviCR :: String -> String
+rimuoviCR xs
     | not (null xs) && last xs == '\r' = init xs
     | otherwise = xs
 
@@ -119,8 +121,8 @@ stripCR xs
     Funzione per normalizzare completamente una riga
     Parametro: Stringa da processare
 -}
-normalizeLine :: String -> String
-normalizeLine = stripCR . stripBOM
+normalizzaRiga :: String -> String
+normalizzaRiga = rimuoviCR . rimuoviBOM
 
 {- 
     Funzione che legge e valida un grafo orientato da file.
@@ -145,7 +147,7 @@ leggiGrafoDaFile nomeFile = do
 
     contenuto <- hGetContents h
 
-    let righe = map normalizeLine (lines contenuto)
+    let righe = map normalizzaRiga (lines contenuto)
 
     case righe of
         vLine:aLine:_ -> parseGrafo vLine aLine
@@ -166,8 +168,8 @@ parseGrafo rVertici rArchi =
         ([(vertici, "")], [(archi, "")]) ->
             validaGrafo vertici archi
         _ ->
-            errore "Errore: formato non valido.
-                    Verificare parentesi, virgole e struttura delle liste."
+            errore ("Errore: formato non valido. " ++
+                   "Verificare parentesi, virgole e struttura delle liste.")
 
 {- 
     Funzione che verifica la validità semantica del grafo.
@@ -184,14 +186,14 @@ parseGrafo rVertici rArchi =
 validaGrafo :: [Int] -> [(Int, Int)] -> IO (Maybe ([Int], [(Int, Int)]))
 validaGrafo vertici archi
     | null vertici =
-        errore "Errore: la lista dei vertici è vuota.
-                Il grafo deve contenere almeno un vertice."
+        errore ("Errore: la lista dei vertici è vuota. " ++
+               "Il grafo deve contenere almeno un vertice.")
     | not (verticiSenzaDuplicati vertici) =
-        errore "Errore: la lista dei vertici contiene duplicati.
-                Ogni vertice deve comparire una sola volta."
+        errore ("Errore: la lista dei vertici contiene duplicati. " ++
+               "Ogni vertice deve comparire una sola volta.")
     | not (archiValidi vertici archi) =
-        errore "Errore: esistono archi che utilizzano vertici
-                non presenti nella lista dei vertici."
+        errore ("Errore: esistono archi che utilizzano " ++
+               "vertici non presenti nella lista dei vertici.")
     | otherwise =
         return (Just (vertici, archi))
 
@@ -247,8 +249,8 @@ acquisisciVertice vertici = do
     case reads input :: [(Int, String)] of
         [(v, _)] | v `elem` vertici -> return v
         _ -> do
-            putStrLn "Vertice non valido: 
-                      inserire un numero presente nella lista dei vertici."
+            putStrLn ("Vertice non valido: " ++
+                     "inserire un numero presente nella lista dei vertici.")
             acquisisciVertice vertici
 
 --------------------------------------------------
