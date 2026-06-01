@@ -159,8 +159,6 @@ leggiGrafoDaFile nomeFile = do
     Parametri:
     - rVertici : stringa contenente la lista dei vertici
     - rArchi   : stringa contenente la lista degli archi
-
-    Usa 'reads' per convertire le stringhe nei tipi Haskell corretti.
 -}
 parseGrafo :: String -> String -> IO (Maybe ([Int], [(Int, Int)]))
 parseGrafo rVertici rArchi =
